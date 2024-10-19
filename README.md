@@ -1,9 +1,3 @@
 # Granular Delay
 
-## Building
-
-After installing [Rust](https://rustup.rs/), you can compile Granular Delay as follows:
-
-```shell
-cargo xtask bundle granular_delay --release
-```
+This is gonna be some kind of granular delay once finished.
