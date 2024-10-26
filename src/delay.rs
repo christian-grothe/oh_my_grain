@@ -28,11 +28,12 @@ pub struct Delay {
     play_heads: Vec<playhead::PlayHead>,
     pub feedback: f32,
     filter: OnePole,
+    feedback_sample: f32,
 }
 
 impl Delay {
     pub fn new(length: usize, sample_rate: f32) -> Self {
-        let play_head_distances = [0.5];
+        let play_head_distances = [0.5, 0.25];
         let data = vec![0.0; length];
 
         Self {
@@ -45,6 +46,7 @@ impl Delay {
                 .map(|distance| playhead::PlayHead::new(*distance, sample_rate))
                 .collect(),
             filter: OnePole::new(),
+            feedback_sample: 0.0,
         }
     }
 
@@ -52,12 +54,19 @@ impl Delay {
         self.play_heads[index].set_distance(value);
     }
 
+    pub fn set_density(&mut self, index: usize, value: f32) {
+        self.play_heads[index].set_density(value);
+    }
+
     pub fn set_alpha(&mut self, value: f32) {
         self.filter.alpha = value;
     }
 
     fn write(&mut self, signal: &f32) {
-        self.data[self.write_head] = *signal;
+        let feedback = self.feedback_sample * self.feedback;
+        let feedback = self.filter.next(feedback);
+
+        self.data[self.write_head] = *signal + feedback; 
         self.write_head = (self.write_head + 1) % self.data.len();
     }
 
@@ -83,11 +92,14 @@ impl Delay {
                 }
 
                 let index = read_pos as usize % self.data.len();
-                out += self.data[index] * gain;
+                out += self.data[index] * gain * 0.5;
             });
         }
 
-        *sample = out;
+        self.feedback_sample = out;
+        //TBD DRY WET
+        *sample *= 0.75;
+        *sample += out;
     }
 
     pub fn render(&mut self, input: &mut f32) {

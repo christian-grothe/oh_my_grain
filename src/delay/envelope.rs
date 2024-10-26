@@ -12,9 +12,9 @@ pub struct Envelope {
 impl Envelope {
     pub fn reset(&mut self) {
         self.phase = 0.0;
-        self.sin0 = (self.phase * 2.0 * PI).sin();
-        self.sin1 = ((self.phase - self.inc) * 2.0 * PI).sin();
-        self.dsin = 2.0 * (self.inc * 2.0 * PI).cos();
+        self.sin0 = (self.phase * PI).sin();
+        self.sin1 = ((self.phase - self.inc) * PI).sin();
+        self.dsin = 2.0 * (self.inc * PI).cos();
     }
 
     pub fn set_inc(&mut self, inc: f64) {

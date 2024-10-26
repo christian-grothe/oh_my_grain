@@ -12,17 +12,18 @@ pub struct GranularDelay {
 struct GranularDelayParams {
     #[persist = "editor-state"]
     editor_state: Arc<EguiState>,
-    #[id = "distance_a"]
+
+    #[id = "densA"]
+    pub density_a: FloatParam,
+
+    #[id = "distanceA"]
     pub distance_a: FloatParam,
 
-    #[id = "distance_b"]
+    #[id = "densB"]
+    pub density_b: FloatParam,
+
+    #[id = "distanceB"]
     pub distance_b: FloatParam,
-
-    #[id = "distance_c"]
-    pub distance_c: FloatParam,
-
-    #[id = "distance_d"]
-    pub distance_d: FloatParam,
 
     #[id = "feedback"]
     pub feedback: FloatParam,
@@ -45,26 +46,25 @@ impl Default for GranularDelayParams {
         Self {
             editor_state: EguiState::from_size(250, 400),
 
-            distance_a: FloatParam::new(
-                "Distance_A",
-                0.1,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
+            density_a: FloatParam::new(
+                "Density A",
+                1.0,
+                FloatRange::Linear {
+                    min: 0.125,
+                    max: 10.0,
+                },
             ),
-            distance_b: FloatParam::new(
-                "Distance_B",
-                0.2,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
+            distance_a: FloatParam::new("Distance A", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 }),
+
+            density_b: FloatParam::new(
+                "Density B",
+                1.0,
+                FloatRange::Linear {
+                    min: 0.125,
+                    max: 10.0,
+                },
             ),
-            distance_c: FloatParam::new(
-                "Distance_C",
-                0.3,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
-            distance_d: FloatParam::new(
-                "Distance_D",
-                0.4,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
+            distance_b: FloatParam::new("Distance B", 0.25, FloatRange::Linear { min: 0.0, max: 1.0 }),
 
             feedback: FloatParam::new("Feedback", 0.2, FloatRange::Linear { min: 0.0, max: 1.0 }),
 
@@ -123,16 +123,22 @@ impl Plugin for GranularDelay {
             move |egui_ctx, setter, _state| {
                 egui::CentralPanel::default().show(egui_ctx, |ui| {
                     ui.label("Granular Delay");
-                    ui.label("DistA");
+
+                    ui.label("Distance A");
                     ui.add(widgets::ParamSlider::for_param(&params.distance_a, setter));
-                    ui.label("DistB");
+
+                    ui.label("Density A");
+                    ui.add(widgets::ParamSlider::for_param(&params.density_a, setter));
+
+                    ui.label("Distance B");
                     ui.add(widgets::ParamSlider::for_param(&params.distance_b, setter));
-                    ui.label("DistC");
-                    ui.add(widgets::ParamSlider::for_param(&params.distance_c, setter));
-                    ui.label("DistD");
-                    ui.add(widgets::ParamSlider::for_param(&params.distance_d, setter));
+
+                    ui.label("Density B");
+                    ui.add(widgets::ParamSlider::for_param(&params.density_b, setter));
+
                     ui.label("Feedback");
                     ui.add(widgets::ParamSlider::for_param(&params.feedback, setter));
+
                     ui.label("Color");
                     ui.add(widgets::ParamSlider::for_param(&params.color, setter));
                 });
@@ -147,11 +153,13 @@ impl Plugin for GranularDelay {
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         for channel_samples in buffer.iter_samples() {
-            self.delay
-                .set_distance(0, self.params.distance_a.smoothed.next());
-
             self.delay.feedback = self.params.feedback.smoothed.next();
             self.delay.set_alpha(self.params.color.smoothed.next());
+
+            self.delay.set_distance(0, self.params.distance_a.smoothed.next());
+            self.delay.set_density(0, self.params.density_a.smoothed.next());
+            self.delay.set_distance(1, self.params.distance_b.smoothed.next());
+            self.delay.set_density(1, self.params.density_b.smoothed.next());
 
             for sample in channel_samples {
                 self.delay.render(sample)

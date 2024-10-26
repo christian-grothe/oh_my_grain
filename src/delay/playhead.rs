@@ -7,7 +7,7 @@ pub struct PlayHead {
     pub window_size: f32, // window_size relative to sample_rate
     grain_size: f32,      // grain_size relative to window_size
     trig: Trig,           // triggers grains
-    grains: [Grain; 10],
+    grains: Vec<Grain> 
 }
 
 impl PlayHead {
@@ -19,9 +19,9 @@ impl PlayHead {
             grain_size: 0.5,
             trig: Trig::new(sample_rate),
             grains: {
-                let mut grains: [Grain; 10] = Default::default();
-                for grain in &mut grains {
-                    *grain = Grain::default()
+                let mut grains = Vec::with_capacity(100);
+                for _ in 0..100{
+                    grains.push(Grain::default());
                 }
                 grains
             },
@@ -30,6 +30,10 @@ impl PlayHead {
 
     pub fn set_distance(&mut self, distance: f32) {
         self.distance = distance;
+    }
+
+    pub fn set_density(&mut self, density: f32){
+        self.trig.set_inc(density);
     }
 
     pub fn get_grain_data(&self) -> Vec<(f32, f32)> {
@@ -99,14 +103,20 @@ impl Grain {
 struct Trig {
     inc: f32,
     phase: f32,
+    sample_rate: f32,
 }
 
 impl Trig {
     fn new(sample_rate: f32) -> Self {
         Trig {
-            inc: 0.2 / sample_rate,
+            inc: 10.0 / sample_rate,
             phase: 0.0,
+            sample_rate
         }
+    }
+
+    fn set_inc(&mut self, freq: f32){
+        self.inc = freq /self.sample_rate;
     }
 
     fn update(&mut self) -> bool {
