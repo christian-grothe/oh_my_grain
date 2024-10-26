@@ -1,10 +1,12 @@
+use super::envelope::Envelope;
+
 #[allow(dead_code)]
 pub struct PlayHead {
     sample_rate: f32,
-    distance: f32,    // distance from record_head range 0-1
-    window_size: f32, // window_size relative to sample_rate
-    grain_size: f32,  // grain_size relative to window_size
-    trig: Trig,       // triggers grains
+    pub distance: f32,    // distance from record_head range 0-1
+    pub window_size: f32, // window_size relative to sample_rate
+    grain_size: f32,      // grain_size relative to window_size
+    trig: Trig,           // triggers grains
     grains: [Grain; 10],
 }
 
@@ -13,8 +15,8 @@ impl PlayHead {
         PlayHead {
             sample_rate,
             distance,
-            window_size: 0.25,
-            grain_size: 0.25,
+            window_size: 1.0,
+            grain_size: 0.5,
             trig: Trig::new(sample_rate),
             grains: {
                 let mut grains: [Grain; 10] = Default::default();
@@ -28,6 +30,16 @@ impl PlayHead {
 
     pub fn set_distance(&mut self, distance: f32) {
         self.distance = distance;
+    }
+
+    pub fn get_grain_data(&self) -> Vec<(f32, f32)> {
+        let mut data = Vec::new();
+        for grain in self.grains.iter() {
+            if grain.active {
+                data.push((grain.pos, grain.gain));
+            }
+        }
+        data
     }
 
     pub fn update(&mut self) {
@@ -62,6 +74,8 @@ struct Grain {
     pos: f32, // position in window -1 to 1
     length: usize,
     counter: usize,
+    gain: f32,
+    env: Envelope,
 }
 
 impl Grain {
@@ -69,11 +83,12 @@ impl Grain {
         self.active = true;
         self.length = length;
         self.pos = pos;
+        self.env.set_inc(1.0 / length as f64);
     }
 
     fn update(&mut self) {
         self.counter += 1;
-        nih_plug::nih_log!("{:?}", self.counter);
+        self.gain = self.env.next_sample() as f32;
         if self.counter > self.length {
             self.active = false;
             self.counter = 0;
@@ -89,7 +104,7 @@ struct Trig {
 impl Trig {
     fn new(sample_rate: f32) -> Self {
         Trig {
-            inc: 2.0 / sample_rate,
+            inc: 0.2 / sample_rate,
             phase: 0.0,
         }
     }
@@ -97,7 +112,6 @@ impl Trig {
     fn update(&mut self) -> bool {
         self.phase += self.inc;
         if self.phase > 1.0 {
-            nih_plug::nih_log!("{:?}", self.phase);
             self.phase -= 1.0;
             return true;
         }

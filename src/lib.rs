@@ -35,7 +35,7 @@ impl Default for GranularDelay {
     fn default() -> Self {
         Self {
             params: Arc::new(GranularDelayParams::default()),
-            delay: delay::Delay::new(44100 * 5),
+            delay: delay::Delay::new(44100 * 5, 44100.0),
         }
     }
 }
@@ -149,12 +149,6 @@ impl Plugin for GranularDelay {
         for channel_samples in buffer.iter_samples() {
             self.delay
                 .set_distance(0, self.params.distance_a.smoothed.next());
-            // self.delay
-            //     .set_distance(1, self.params.distance_b.smoothed.next());
-            // self.delay
-            //     .set_distance(2, self.params.distance_c.smoothed.next());
-            // self.delay
-            //     .set_distance(3, self.params.distance_d.smoothed.next());
 
             self.delay.feedback = self.params.feedback.smoothed.next();
             self.delay.set_alpha(self.params.color.smoothed.next());
