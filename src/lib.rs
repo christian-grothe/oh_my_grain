@@ -3,7 +3,7 @@ use nih_plug::prelude::*;
 use nih_plug_egui::{create_egui_editor, egui, widgets, EguiState};
 use std::sync::Arc;
 
-struct GranularDelay {
+pub struct GranularDelay {
     params: Arc<GranularDelayParams>,
     delay: delay::Delay,
 }
@@ -149,15 +149,14 @@ impl Plugin for GranularDelay {
         for channel_samples in buffer.iter_samples() {
             self.delay
                 .set_distance(0, self.params.distance_a.smoothed.next());
-            self.delay
-                .set_distance(1, self.params.distance_b.smoothed.next());
-            self.delay
-                .set_distance(2, self.params.distance_c.smoothed.next());
-            self.delay
-                .set_distance(3, self.params.distance_d.smoothed.next());
+            // self.delay
+            //     .set_distance(1, self.params.distance_b.smoothed.next());
+            // self.delay
+            //     .set_distance(2, self.params.distance_c.smoothed.next());
+            // self.delay
+            //     .set_distance(3, self.params.distance_d.smoothed.next());
 
             self.delay.feedback = self.params.feedback.smoothed.next();
-
             self.delay.set_alpha(self.params.color.smoothed.next());
 
             for sample in channel_samples {
