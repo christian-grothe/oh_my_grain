@@ -15,8 +15,8 @@ impl PlayHead {
         PlayHead {
             sample_rate,
             distance,
-            window_size: 1.0,
-            grain_size: 0.5,
+            window_size: 2.0,
+            grain_size: 1.0,
             trig: Trig::new(sample_rate),
             grains: {
                 let mut grains = Vec::with_capacity(100);

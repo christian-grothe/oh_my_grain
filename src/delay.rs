@@ -66,22 +66,30 @@ impl Delay {
         let feedback = self.feedback_sample * self.feedback;
         let feedback = self.filter.next(feedback);
 
-        self.data[self.write_head] = *signal + feedback; 
+        self.data[self.write_head] = *signal + feedback;
         self.write_head = (self.write_head + 1) % self.data.len();
     }
 
     fn read(&mut self, sample: &mut f32) {
         let mut out = 0.0;
+        let mut feedback = 0.0;
         for play_head in self.play_heads.iter_mut() {
             play_head.update();
 
             let buffer_size = self.data.len() as f32;
+            let offset = buffer_size * play_head.distance;
+
+            let mut feedback_pos = self.write_head as f32 - offset;
+
+            if feedback_pos < 0.0 {
+                feedback_pos += buffer_size;
+            }
+
+            feedback += self.data[feedback_pos as usize % self.data.len()];
 
             let grain_data = play_head.get_grain_data();
 
             grain_data.iter().for_each(|(pos, gain)| {
-                let offset = buffer_size * play_head.distance;
-
                 let abs_window_size = play_head.window_size * self.sample_rate;
                 let grain_offset = abs_window_size / 2.0 * pos;
 
@@ -96,7 +104,7 @@ impl Delay {
             });
         }
 
-        self.feedback_sample = out;
+        self.feedback_sample = feedback;
         //TBD DRY WET
         *sample *= 0.75;
         *sample += out;
