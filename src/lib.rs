@@ -54,7 +54,11 @@ impl Default for GranularDelayParams {
                     max: 10.0,
                 },
             ),
-            distance_a: FloatParam::new("Distance A", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            distance_a: FloatParam::new(
+                "Distance A",
+                0.5,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            ),
 
             density_b: FloatParam::new(
                 "Density B",
@@ -64,7 +68,11 @@ impl Default for GranularDelayParams {
                     max: 10.0,
                 },
             ),
-            distance_b: FloatParam::new("Distance B", 0.25, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            distance_b: FloatParam::new(
+                "Distance B",
+                0.25,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            ),
 
             feedback: FloatParam::new("Feedback", 0.2, FloatRange::Linear { min: 0.0, max: 1.0 }),
 
@@ -152,17 +160,23 @@ impl Plugin for GranularDelay {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
+        self.delay.feedback = self.params.feedback.smoothed.next();
+        self.delay.set_alpha(self.params.color.smoothed.next());
+
+        self.delay
+            .set_distance(0, self.params.distance_a.smoothed.next());
+        self.delay
+            .set_density(0, self.params.density_a.smoothed.next());
+        self.delay
+            .set_distance(1, self.params.distance_b.smoothed.next());
+        self.delay
+            .set_density(1, self.params.density_b.smoothed.next());
+
         for channel_samples in buffer.iter_samples() {
-            self.delay.feedback = self.params.feedback.smoothed.next();
-            self.delay.set_alpha(self.params.color.smoothed.next());
-
-            self.delay.set_distance(0, self.params.distance_a.smoothed.next());
-            self.delay.set_density(0, self.params.density_a.smoothed.next());
-            self.delay.set_distance(1, self.params.distance_b.smoothed.next());
-            self.delay.set_density(1, self.params.density_b.smoothed.next());
-
             for sample in channel_samples {
-                self.delay.render(sample)
+                let sig = (&mut sample.clone(), &mut sample.clone());
+                //self.delay.render(sample, &mut sample.clone());
+                self.delay.render(sig);
             }
         }
 
