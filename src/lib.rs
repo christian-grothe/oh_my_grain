@@ -172,12 +172,13 @@ impl Plugin for GranularDelay {
         self.delay
             .set_density(1, self.params.density_b.smoothed.next());
 
-        for channel_samples in buffer.iter_samples() {
-            for sample in channel_samples {
-                let sig = (&mut sample.clone(), &mut sample.clone());
-                //self.delay.render(sample, &mut sample.clone());
-                self.delay.render(sig);
-            }
+        for (_, block) in buffer.iter_blocks(1) {
+            let mut block_channels = block.into_iter();
+            let stereo_slice = (
+                &mut block_channels.next().unwrap()[0],
+                &mut block_channels.next().unwrap()[0],
+            );
+            self.delay.render(stereo_slice);
         }
 
         ProcessStatus::Normal

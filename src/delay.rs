@@ -95,7 +95,7 @@ impl Delay {
 
             let grain_data = play_head.get_grain_data();
 
-            grain_data.iter().for_each(|(pos, gain)| {
+            grain_data.iter().for_each(|(pos, gain, stereo_pos)| {
                 let abs_window_size = play_head.window_size * self.sample_rate;
                 let grain_offset = abs_window_size / 2.0 * pos;
 
@@ -106,8 +106,12 @@ impl Delay {
                 }
 
                 let index = read_pos as usize % self.data.len();
-                out.0 += self.data[index].clone().0 * *gain * 0.5;
-                out.1 += self.data[index].clone().1 * *gain * 0.5;
+
+                let left_gain = 0.5 * (1.0 - stereo_pos);
+                let right_gain = 0.5 * (1.0 + stereo_pos);
+
+                out.0 += self.data[index].clone().0 * *gain * left_gain;
+                out.1 += self.data[index].clone().1 * *gain * right_gain;
             });
         }
 

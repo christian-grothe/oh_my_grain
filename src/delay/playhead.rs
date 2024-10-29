@@ -7,7 +7,7 @@ pub struct PlayHead {
     pub window_size: f32, // window_size relative to sample_rate
     grain_size: f32,      // grain_size relative to window_size
     trig: Trig,           // triggers grains
-    grains: Vec<Grain> 
+    grains: Vec<Grain>,
 }
 
 impl PlayHead {
@@ -20,7 +20,7 @@ impl PlayHead {
             trig: Trig::new(sample_rate),
             grains: {
                 let mut grains = Vec::with_capacity(100);
-                for _ in 0..100{
+                for _ in 0..100 {
                     grains.push(Grain::default());
                 }
                 grains
@@ -32,15 +32,15 @@ impl PlayHead {
         self.distance = distance;
     }
 
-    pub fn set_density(&mut self, density: f32){
+    pub fn set_density(&mut self, density: f32) {
         self.trig.set_inc(density);
     }
 
-    pub fn get_grain_data(&self) -> Vec<(f32, f32)> {
+    pub fn get_grain_data(&self) -> Vec<(f32, f32, f32)> {
         let mut data = Vec::new();
         for grain in self.grains.iter() {
             if grain.active {
-                data.push((grain.pos, grain.gain));
+                data.push((grain.pos, grain.gain, grain.stereo_pos));
             }
         }
         data
@@ -76,6 +76,7 @@ impl PlayHead {
 struct Grain {
     active: bool,
     pos: f32, // position in window -1 to 1
+    stereo_pos: f32,
     length: usize,
     counter: usize,
     gain: f32,
@@ -88,6 +89,7 @@ impl Grain {
         self.length = length;
         self.pos = pos;
         self.env.set_inc(1.0 / length as f64);
+        self.stereo_pos = rand::random::<f32>() * 2.0 - 1.0;
     }
 
     fn update(&mut self) {
@@ -111,12 +113,12 @@ impl Trig {
         Trig {
             inc: 10.0 / sample_rate,
             phase: 0.0,
-            sample_rate
+            sample_rate,
         }
     }
 
-    fn set_inc(&mut self, freq: f32){
-        self.inc = freq /self.sample_rate;
+    fn set_inc(&mut self, freq: f32) {
+        self.inc = freq / self.sample_rate;
     }
 
     fn update(&mut self) -> bool {
