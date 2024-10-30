@@ -1,12 +1,17 @@
 use super::envelope::Envelope;
 
+fn lerp(v0: f32, v1: f32, t: f32) -> f32 {
+    (1.0 - t) * v0 + t * v1
+}
+
 #[allow(dead_code)]
 pub struct PlayHead {
     sample_rate: f32,
-    pub distance: f32,    // distance from record_head range 0-1
-    pub window_size: f32, // window_size relative to sample_rate
-    grain_size: f32,      // grain_size relative to window_size
-    trig: Trig,           // triggers grains
+    pub distance: f32,         // distance from record_head range 0-1
+    pub current_distance: f32, // current distance interpolates to distance
+    pub window_size: f32,      // window_size relative to sample_rate
+    grain_size: f32,           // grain_size relative to window_size
+    trig: Trig,                // triggers grains
     grains: Vec<Grain>,
 }
 
@@ -15,6 +20,7 @@ impl PlayHead {
         PlayHead {
             sample_rate,
             distance,
+            current_distance: distance,
             window_size: 2.0,
             grain_size: 1.0,
             trig: Trig::new(sample_rate),
@@ -32,6 +38,12 @@ impl PlayHead {
         self.distance = distance;
     }
 
+    pub fn set_current_distance(&mut self) {
+        if self.current_distance != self.distance {
+            self.current_distance = lerp(self.current_distance, self.distance, 0.1);
+        }
+    }
+
     pub fn set_density(&mut self, density: f32) {
         self.trig.set_inc(density);
     }
@@ -47,6 +59,7 @@ impl PlayHead {
     }
 
     pub fn update(&mut self) {
+        self.set_current_distance();
         if self.trig.update() {
             self.activate_grain();
         }

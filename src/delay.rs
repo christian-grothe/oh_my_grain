@@ -4,7 +4,8 @@ mod playhead;
 #[allow(dead_code)]
 struct OnePole {
     alpha: f32,
-    z1: f32,
+    z1_l: f32,
+    z1_r: f32,
 }
 
 #[allow(dead_code)]
@@ -12,12 +13,14 @@ impl OnePole {
     fn new() -> Self {
         Self {
             alpha: 0.5,
-            z1: 0.0,
+            z1_l: 0.0,
+            z1_r: 0.0,
         }
     }
-    fn next(&mut self, input: f32) -> f32 {
-        self.z1 = self.z1 + self.alpha * (input - self.z1);
-        self.z1
+    fn next(&mut self, input: (f32, f32)) -> (f32, f32) {
+        self.z1_l = self.z1_l + self.alpha * (input.0 - self.z1_l);
+        self.z1_r = self.z1_r + self.alpha * (input.1 - self.z1_r);
+        (self.z1_l, self.z1_r)
     }
 }
 
@@ -67,7 +70,8 @@ impl Delay {
             self.feedback_sample.0 * self.feedback,
             self.feedback_sample.1 * self.feedback,
         );
-        //let feedback = self.filter.next(feedback);
+
+        let feedback = self.filter.next(feedback);
 
         self.data[self.write_head].0 = signal.0 + feedback.0;
         self.data[self.write_head].1 = signal.1 + feedback.1;
@@ -82,7 +86,7 @@ impl Delay {
             play_head.update();
 
             let buffer_size = self.data.len() as f32;
-            let offset = buffer_size * play_head.distance;
+            let offset = buffer_size * play_head.current_distance;
 
             let mut feedback_pos = self.write_head as f32 - offset;
 
