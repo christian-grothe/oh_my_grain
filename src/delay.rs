@@ -35,18 +35,14 @@ pub struct Delay {
 }
 
 impl Delay {
-    pub fn new(length: usize, sample_rate: f32) -> Self {
-        let play_head_distances = [0.5, 0.25];
-        let data: Vec<(f32, f32)> = vec![(0.0, 0.0); length];
-
+    pub fn new(length: usize, sample_rate: f32, play_heads: usize, grain_num: usize) -> Self {
         Self {
-            data,
+            data: vec![(0.0, 0.0); length],
             sample_rate,
             write_head: 0,
             feedback: 0.0,
-            play_heads: play_head_distances
-                .iter()
-                .map(|distance| playhead::PlayHead::new(*distance, sample_rate))
+            play_heads: (0..play_heads)
+                .map(|_| playhead::PlayHead::new(0.5, sample_rate, grain_num))
                 .collect(),
             filter: OnePole::new(),
             feedback_sample: (0.0, 0.0),
@@ -59,6 +55,14 @@ impl Delay {
 
     pub fn set_density(&mut self, index: usize, value: f32) {
         self.play_heads[index].set_density(value);
+    }
+
+    pub fn set_window_size(&mut self, index: usize, value: f32) {
+        self.play_heads[index].set_window_size(value);
+    }
+
+    pub fn set_grain_size(&mut self, index: usize, value: f32) {
+        self.play_heads[index].set_grain_size(value);
     }
 
     pub fn set_alpha(&mut self, value: f32) {

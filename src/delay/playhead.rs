@@ -7,7 +7,7 @@ fn lerp(v0: f32, v1: f32, t: f32) -> f32 {
 #[allow(dead_code)]
 pub struct PlayHead {
     sample_rate: f32,
-    pub distance: f32,         // distance from record_head range 0-1
+    distance: f32,             // distance from record_head range 0-1
     pub current_distance: f32, // current distance interpolates to distance
     pub window_size: f32,      // window_size relative to sample_rate
     grain_size: f32,           // grain_size relative to window_size
@@ -16,7 +16,7 @@ pub struct PlayHead {
 }
 
 impl PlayHead {
-    pub fn new(distance: f32, sample_rate: f32) -> Self {
+    pub fn new(distance: f32, sample_rate: f32, grain_num: usize) -> Self {
         PlayHead {
             sample_rate,
             distance,
@@ -25,13 +25,21 @@ impl PlayHead {
             grain_size: 1.0,
             trig: Trig::new(sample_rate),
             grains: {
-                let mut grains = Vec::with_capacity(100);
-                for _ in 0..100 {
+                let mut grains: Vec<Grain> = Vec::with_capacity(grain_num);
+                for _ in 0..grain_num {
                     grains.push(Grain::default());
                 }
                 grains
             },
         }
+    }
+
+    pub fn set_window_size(&mut self, window_size: f32) {
+        self.window_size = window_size;
+    }
+
+    pub fn set_grain_size(&mut self, grain_size: f32) {
+        self.grain_size = grain_size;
     }
 
     pub fn set_distance(&mut self, distance: f32) {
@@ -40,7 +48,7 @@ impl PlayHead {
 
     pub fn set_current_distance(&mut self) {
         if self.current_distance != self.distance {
-            self.current_distance = lerp(self.current_distance, self.distance, 0.1);
+            self.current_distance = lerp(self.current_distance, self.distance, 0.0001);
         }
     }
 

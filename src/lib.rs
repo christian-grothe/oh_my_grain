@@ -3,6 +3,9 @@ use nih_plug::prelude::*;
 use nih_plug_egui::{create_egui_editor, egui, widgets, EguiState};
 use std::sync::Arc;
 
+const PLAY_HEADS: usize = 2;
+const GRAIN_NUM: usize = 256;
+
 pub struct GranularDelay {
     params: Arc<GranularDelayParams>,
     delay: delay::Delay,
@@ -15,19 +18,24 @@ struct GranularDelayParams {
 
     #[id = "densA"]
     pub density_a: FloatParam,
-
     #[id = "distanceA"]
     pub distance_a: FloatParam,
+    #[id = "windowSizeA"]
+    pub window_size_a: FloatParam,
+    #[id = "grainSizeA"]
+    pub grain_size_a: FloatParam,
 
     #[id = "densB"]
     pub density_b: FloatParam,
-
     #[id = "distanceB"]
     pub distance_b: FloatParam,
+    #[id = "windowSizeB"]
+    pub window_size_b: FloatParam,
+    #[id = "grainSizeB"]
+    pub grain_size_b: FloatParam,
 
     #[id = "feedback"]
     pub feedback: FloatParam,
-
     #[id = "color"]
     pub color: FloatParam,
 }
@@ -36,7 +44,7 @@ impl Default for GranularDelay {
     fn default() -> Self {
         Self {
             params: Arc::new(GranularDelayParams::default()),
-            delay: delay::Delay::new(44100 * 5, 44100.0),
+            delay: delay::Delay::new(44100 * 5, 44100.0, PLAY_HEADS, GRAIN_NUM),
         }
     }
 }
@@ -44,7 +52,7 @@ impl Default for GranularDelay {
 impl Default for GranularDelayParams {
     fn default() -> Self {
         Self {
-            editor_state: EguiState::from_size(250, 400),
+            editor_state: EguiState::from_size(250, 600),
 
             density_a: FloatParam::new(
                 "Density A",
@@ -56,6 +64,16 @@ impl Default for GranularDelayParams {
             ),
             distance_a: FloatParam::new(
                 "Distance A",
+                0.5,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            ),
+            window_size_a: FloatParam::new(
+                "Window Size A",
+                0.5,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            ),
+            grain_size_a: FloatParam::new(
+                "Grain Size A",
                 0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
             ),
@@ -71,6 +89,16 @@ impl Default for GranularDelayParams {
             distance_b: FloatParam::new(
                 "Distance B",
                 0.25,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            ),
+            window_size_b: FloatParam::new(
+                "Window Size B",
+                0.5,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            ),
+            grain_size_b: FloatParam::new(
+                "Grain Size B",
+                0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
             ),
 
@@ -132,18 +160,45 @@ impl Plugin for GranularDelay {
                 egui::CentralPanel::default().show(egui_ctx, |ui| {
                     ui.label("Granular Delay");
 
-                    ui.label("Distance A");
+                    ui.label("Playhead A");
+                    ui.label("Distance");
                     ui.add(widgets::ParamSlider::for_param(&params.distance_a, setter));
 
-                    ui.label("Density A");
+                    ui.label("Density");
                     ui.add(widgets::ParamSlider::for_param(&params.density_a, setter));
 
-                    ui.label("Distance B");
+                    ui.label("Window Size");
+                    ui.add(widgets::ParamSlider::for_param(
+                        &params.window_size_a,
+                        setter,
+                    ));
+
+                    ui.label("Grain Size");
+                    ui.add(widgets::ParamSlider::for_param(
+                        &params.grain_size_a,
+                        setter,
+                    ));
+
+                    ui.label("Playhead B");
+                    ui.label("Distance");
                     ui.add(widgets::ParamSlider::for_param(&params.distance_b, setter));
 
-                    ui.label("Density B");
+                    ui.label("Density");
                     ui.add(widgets::ParamSlider::for_param(&params.density_b, setter));
 
+                    ui.label("Window Size");
+                    ui.add(widgets::ParamSlider::for_param(
+                        &params.window_size_b,
+                        setter,
+                    ));
+
+                    ui.label("Grain Size");
+                    ui.add(widgets::ParamSlider::for_param(
+                        &params.grain_size_b,
+                        setter,
+                    ));
+
+                    ui.label("General");
                     ui.label("Feedback");
                     ui.add(widgets::ParamSlider::for_param(&params.feedback, setter));
 
@@ -168,9 +223,17 @@ impl Plugin for GranularDelay {
         self.delay
             .set_density(0, self.params.density_a.smoothed.next());
         self.delay
+            .set_window_size(0, self.params.window_size_a.smoothed.next());
+        self.delay
+            .set_grain_size(0, self.params.grain_size_a.smoothed.next());
+        self.delay
             .set_distance(1, self.params.distance_b.smoothed.next());
         self.delay
             .set_density(1, self.params.density_b.smoothed.next());
+        self.delay
+            .set_window_size(1, self.params.window_size_b.smoothed.next());
+        self.delay
+            .set_grain_size(1, self.params.grain_size_b.smoothed.next());
 
         for channels in buffer.iter_samples() {
             let mut sample_channels = channels.into_iter();
