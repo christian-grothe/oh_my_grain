@@ -44,7 +44,7 @@ impl Default for GranularDelay {
     fn default() -> Self {
         Self {
             params: Arc::new(GranularDelayParams::default()),
-            delay: delay::Delay::new(44100 * 5, 44100.0, PLAY_HEADS, GRAIN_NUM),
+            delay: delay::Delay::new(PLAY_HEADS, GRAIN_NUM),
         }
     }
 }
@@ -207,6 +207,19 @@ impl Plugin for GranularDelay {
                 });
             },
         )
+    }
+
+    fn initialize(
+        &mut self,
+        _audio_io_layout: &AudioIOLayout,
+        buffer_config: &BufferConfig,
+        _context: &mut impl InitContext<Self>,
+    ) -> bool {
+        self.delay.init(
+            10 * buffer_config.sample_rate as usize,
+            buffer_config.sample_rate,
+        );
+        true
     }
 
     fn process(

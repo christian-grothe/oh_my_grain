@@ -16,14 +16,14 @@ pub struct PlayHead {
 }
 
 impl PlayHead {
-    pub fn new(distance: f32, sample_rate: f32, grain_num: usize) -> Self {
+    pub fn new(distance: f32, grain_num: usize) -> Self {
         PlayHead {
-            sample_rate,
+            sample_rate: 0.0,
             distance,
             current_distance: distance,
             window_size: 2.0,
             grain_size: 1.0,
-            trig: Trig::new(sample_rate),
+            trig: Trig::new(),
             grains: {
                 let mut grains: Vec<Grain> = Vec::with_capacity(grain_num);
                 for _ in 0..grain_num {
@@ -46,9 +46,14 @@ impl PlayHead {
         self.distance = distance;
     }
 
+    pub fn set_sample_rate(&mut self, sample_rate: f32) {
+        self.sample_rate = sample_rate;
+        self.trig.set_sample_rate(sample_rate);
+    }
+
     pub fn set_current_distance(&mut self) {
         if self.current_distance != self.distance {
-            self.current_distance = lerp(self.current_distance, self.distance, 0.0001);
+            self.current_distance = lerp(self.current_distance, self.distance, 0.00001);
         }
     }
 
@@ -130,16 +135,20 @@ struct Trig {
 }
 
 impl Trig {
-    fn new(sample_rate: f32) -> Self {
+    fn new() -> Self {
         Trig {
-            inc: 10.0 / sample_rate,
+            inc: 0.0,
             phase: 0.0,
-            sample_rate,
+            sample_rate: 0.0,
         }
     }
 
     fn set_inc(&mut self, freq: f32) {
         self.inc = freq / self.sample_rate;
+    }
+
+    pub fn set_sample_rate(&mut self, sample_rate: f32) {
+        self.sample_rate = sample_rate;
     }
 
     fn update(&mut self) -> bool {
