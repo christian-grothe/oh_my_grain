@@ -1,7 +1,9 @@
 mod delay;
 use nih_plug::prelude::*;
-use nih_plug_egui::{create_egui_editor, egui, widgets, EguiState};
 use std::sync::Arc;
+use nih_plug_vizia::ViziaState;
+
+mod editor;
 
 const PLAY_HEADS: usize = 2;
 const GRAIN_NUM: usize = 256;
@@ -14,7 +16,7 @@ pub struct GranularDelay {
 #[derive(Params)]
 struct GranularDelayParams {
     #[persist = "editor-state"]
-    editor_state: Arc<EguiState>,
+    editor_state: Arc<ViziaState>,
 
     #[id = "densA"]
     pub density_a: FloatParam,
@@ -52,7 +54,7 @@ impl Default for GranularDelay {
 impl Default for GranularDelayParams {
     fn default() -> Self {
         Self {
-            editor_state: EguiState::from_size(250, 600),
+            editor_state: editor::default_state(),
 
             density_a: FloatParam::new(
                 "Density A",
@@ -151,62 +153,7 @@ impl Plugin for GranularDelay {
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        let params = self.params.clone();
-        create_egui_editor(
-            self.params.editor_state.clone(),
-            (),
-            |_, _| {},
-            move |egui_ctx, setter, _state| {
-                egui::CentralPanel::default().show(egui_ctx, |ui| {
-                    ui.label("Granular Delay");
-
-                    ui.label("Playhead A");
-                    ui.label("Distance");
-                    ui.add(widgets::ParamSlider::for_param(&params.distance_a, setter));
-
-                    ui.label("Density");
-                    ui.add(widgets::ParamSlider::for_param(&params.density_a, setter));
-
-                    ui.label("Window Size");
-                    ui.add(widgets::ParamSlider::for_param(
-                        &params.window_size_a,
-                        setter,
-                    ));
-
-                    ui.label("Grain Size");
-                    ui.add(widgets::ParamSlider::for_param(
-                        &params.grain_size_a,
-                        setter,
-                    ));
-
-                    ui.label("Playhead B");
-                    ui.label("Distance");
-                    ui.add(widgets::ParamSlider::for_param(&params.distance_b, setter));
-
-                    ui.label("Density");
-                    ui.add(widgets::ParamSlider::for_param(&params.density_b, setter));
-
-                    ui.label("Window Size");
-                    ui.add(widgets::ParamSlider::for_param(
-                        &params.window_size_b,
-                        setter,
-                    ));
-
-                    ui.label("Grain Size");
-                    ui.add(widgets::ParamSlider::for_param(
-                        &params.grain_size_b,
-                        setter,
-                    ));
-
-                    ui.label("General");
-                    ui.label("Feedback");
-                    ui.add(widgets::ParamSlider::for_param(&params.feedback, setter));
-
-                    ui.label("Color");
-                    ui.add(widgets::ParamSlider::for_param(&params.color, setter));
-                });
-            },
-        )
+        editor::create(self.params.clone(), self.params.editor_state.clone())
     }
 
     fn initialize(
