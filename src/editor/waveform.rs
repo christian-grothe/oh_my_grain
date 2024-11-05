@@ -37,7 +37,6 @@ impl Waveform {
         }
         .build(
             cx,
-            // This is an otherwise empty element only used for custom drawing
             |_cx| (),
         )
     }
@@ -53,12 +52,15 @@ impl View for Waveform {
             return;
         }
 
-        let rect_paint = Paint::color(Color::rgb(20, 39, 123));
+        let paint = Paint::color(Color::rgb(100,100,100));
         let mut path = Path::new();
         let buffer = self.buffer.read().unwrap();
-        let chunks = buffer.data.len() / 256;
+        let chunks = buffer.data.len() / 128;
 
-        let buffer_to_draw: Vec<(f32, f32)> = buffer.data
+        let buffer_to_draw: Vec<(f32, f32)> = buffer.data[buffer.write_head..]
+            .iter()
+            .chain(buffer.data[..buffer.write_head].iter())
+            .collect::<Vec<&(f32, f32)>>()
             .chunks(chunks)
             .map(|chunk| {
                 chunk
@@ -71,18 +73,23 @@ impl View for Waveform {
             let bar_height = (*l + *r) / chunks as f32;
             path.rect(
                 bounds.x + bounds.w * i as f32 / buffer_to_draw.len() as f32,
-                bounds.y + bounds.h / 2.0 - bar_height / 2.0,
+                (bounds.y + bounds.h / 2.0) - (bounds.h * bar_height / 2.0),
                 2.0,
                 bounds.h * bar_height,
             );
         }
 
+        canvas.fill_path(&path, &paint);
+
+        let mut path = Path::new();
+
         path.rect(
-            bounds.x + bounds.w * self.dist_a_param.unmodulated_normalized_value(),
+            bounds.x + bounds.w * (1.0 - self.dist_a_param.unmodulated_normalized_value()),
             bounds.y,
             20.0,
             bounds.h,
         );
-        canvas.fill_path(&path, &rect_paint);
+
+        canvas.stroke_path(&path, &paint);
     }
 }

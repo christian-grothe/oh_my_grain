@@ -28,7 +28,7 @@ impl OnePole {
 
 pub struct Buffer {
     pub data: Vec<(f32, f32)>,
-    write_head: usize,
+    pub write_head: usize,
 }
 
 pub struct Delay {

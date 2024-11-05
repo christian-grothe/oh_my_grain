@@ -61,7 +61,7 @@ impl Default for GranularDelayParams {
                 1.0,
                 FloatRange::Linear {
                     min: 0.125,
-                    max: 10.0,
+                    max: 50.0,
                 },
             ),
             distance_a: FloatParam::new(
@@ -85,7 +85,7 @@ impl Default for GranularDelayParams {
                 1.0,
                 FloatRange::Linear {
                     min: 0.125,
-                    max: 10.0,
+                    max: 50.0,
                 },
             ),
             distance_b: FloatParam::new(
@@ -104,7 +104,7 @@ impl Default for GranularDelayParams {
                 FloatRange::Linear { min: 0.0, max: 1.0 },
             ),
 
-            feedback: FloatParam::new("Feedback", 0.2, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            feedback: FloatParam::new("Feedback", 0.45, FloatRange::Linear { min: 0.0, max: 1.0 }),
 
             color: FloatParam::new("Color", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 }),
         }
