@@ -1,7 +1,7 @@
 mod delay;
 use nih_plug::prelude::*;
-use std::sync::Arc;
 use nih_plug_vizia::ViziaState;
+use std::sync::Arc;
 
 mod editor;
 
@@ -153,7 +153,11 @@ impl Plugin for GranularDelay {
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        editor::create(self.params.clone(), self.params.editor_state.clone())
+        editor::create(
+            self.params.clone(),
+            self.params.editor_state.clone(),
+            self.delay.buffer.clone(),
+        )
     }
 
     fn initialize(

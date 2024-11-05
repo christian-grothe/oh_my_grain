@@ -3,9 +3,10 @@ use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::prelude::*;
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use waveform::Waveform;
 
+use crate::delay::Buffer;
 use crate::GranularDelayParams;
 mod waveform;
 
@@ -16,7 +17,6 @@ struct Data {
 
 impl Model for Data {}
 
-// Makes sense to also define this here, makes it a bit easier to keep track of
 pub(crate) fn default_state() -> Arc<ViziaState> {
     ViziaState::new(|| (600, 400))
 }
@@ -24,6 +24,7 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 pub(crate) fn create(
     params: Arc<GranularDelayParams>,
     editor_state: Arc<ViziaState>,
+    buffer: Arc<RwLock<Buffer>>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
         assets::register_noto_sans_light(cx);
@@ -41,18 +42,14 @@ pub(crate) fn create(
         VStack::new(cx, |cx| {
             top_bar(cx);
             controlls(cx);
-            waveform(cx);
+            waveform(cx, buffer.clone());
         });
     })
 }
 
-fn waveform(cx: &mut Context) {
+fn waveform(cx: &mut Context, buffer: Arc<RwLock<Buffer>>) {
     HStack::new(cx, |cx| {
-        Waveform::new(
-            cx,
-            Data::params,
-            |params| &params.distance_a,
-        );
+        Waveform::new(cx, buffer, Data::params, |params| &params.distance_a);
     })
     .height(Pixels(100.0))
     .class("section");
