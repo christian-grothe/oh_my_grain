@@ -6,7 +6,7 @@ use std::sync::Arc;
 mod editor;
 
 const PLAY_HEADS: usize = 2;
-const GRAIN_NUM: usize = 256;
+const GRAIN_NUM: usize = 30;
 
 pub struct GranularDelay {
     params: Arc<GranularDelayParams>,

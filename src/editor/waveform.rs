@@ -15,30 +15,39 @@ use crate::delay::Buffer;
 
 pub struct Waveform {
     dist_a_param: ParamWidgetBase,
+    window_size_a_param: ParamWidgetBase,
+    dist_b_param: ParamWidgetBase,
+    window_size_b_param: ParamWidgetBase,
     buffer: Arc<RwLock<Buffer>>,
 }
 
 impl Waveform {
-    pub fn new<L, Params, P, FMap>(
+    pub fn new<L, Params, P, DAMap, WAMap, DBMap, WBMap>(
         cx: &mut Context,
         buffer: Arc<RwLock<Buffer>>,
         params: L,
-        params_to_param_dist_a: FMap,
+        params_to_param_dist_a: DAMap,
+        params_to_param_window_size_a: WAMap,
+        params_to_param_dist_b: DBMap,
+        params_to_param_window_size_b: WBMap,
     ) -> Handle<Self>
     where
         L: Lens<Target = Params> + Clone,
         Params: 'static,
         P: Param + 'static,
-        FMap: Fn(&Params) -> &P + Copy + 'static,
+        DAMap: Fn(&Params) -> &P + Copy + 'static,
+        WAMap: Fn(&Params) -> &P + Copy + 'static,
+        DBMap: Fn(&Params) -> &P + Copy + 'static,
+        WBMap: Fn(&Params) -> &P + Copy + 'static,
     {
         Self {
             dist_a_param: ParamWidgetBase::new(cx, params, params_to_param_dist_a),
+            window_size_a_param: ParamWidgetBase::new(cx, params, params_to_param_window_size_a),
+            dist_b_param: ParamWidgetBase::new(cx, params, params_to_param_dist_b),
+            window_size_b_param: ParamWidgetBase::new(cx, params, params_to_param_window_size_b),
             buffer,
         }
-        .build(
-            cx,
-            |_cx| (),
-        )
+        .build(cx, |_cx| ())
     }
 }
 
@@ -52,7 +61,7 @@ impl View for Waveform {
             return;
         }
 
-        let paint = Paint::color(Color::rgb(100,100,100));
+        let paint = Paint::color(Color::rgb(100, 100, 100));
         let mut path = Path::new();
         let buffer = self.buffer.read().unwrap();
         let chunks = buffer.data.len() / 128;
@@ -82,11 +91,22 @@ impl View for Waveform {
         canvas.fill_path(&path, &paint);
 
         let mut path = Path::new();
-
+        let paint = Paint::color(Color::rgb(200, 100, 100));
         path.rect(
             bounds.x + bounds.w * (1.0 - self.dist_a_param.unmodulated_normalized_value()),
             bounds.y,
-            20.0,
+            50.0 * self.window_size_a_param.unmodulated_normalized_value(),
+            bounds.h,
+        );
+
+        canvas.stroke_path(&path, &paint);
+
+        let mut path = Path::new();
+        let paint = Paint::color(Color::rgb(100, 200, 100));
+        path.rect(
+            bounds.x + bounds.w * (1.0 - self.dist_b_param.unmodulated_normalized_value()),
+            bounds.y,
+            50.0 * self.window_size_b_param.unmodulated_normalized_value(),
             bounds.h,
         );
 

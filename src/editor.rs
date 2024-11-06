@@ -49,10 +49,20 @@ pub(crate) fn create(
 
 fn waveform(cx: &mut Context, buffer: Arc<RwLock<Buffer>>) {
     HStack::new(cx, |cx| {
-        Waveform::new(cx, buffer, Data::params, |params| &params.distance_a);
+        Waveform::new(
+            cx,
+            buffer,
+            Data::params,
+            |params| &params.distance_a,
+            |params| &params.window_size_a,
+            |params| &params.distance_b,
+            |params| &params.window_size_b,
+        );
     })
+    .min_top(Pixels(30.0))
     .height(Pixels(100.0))
     .class("section");
+
 }
 
 fn top_bar(cx: &mut Context) {
@@ -76,7 +86,9 @@ fn controlls(cx: &mut Context) {
                 .font_size(15.0)
                 .height(Pixels(20.0))
                 .child_top(Stretch(1.0))
-                .child_bottom(Pixels(0.0));
+                .child_bottom(Pixels(0.0))
+                .color(Color::rgb(200, 100, 100));
+            
 
             Label::new(cx, "Distance");
             ParamSlider::new(cx, Data::params, |params| &params.distance_a)
@@ -100,7 +112,8 @@ fn controlls(cx: &mut Context) {
                 .font_size(15.0)
                 .height(Pixels(20.0))
                 .child_top(Stretch(1.0))
-                .child_bottom(Pixels(0.0));
+                .child_bottom(Pixels(0.0))
+                .color(Color::rgb(100, 200, 100));
 
             Label::new(cx, "Distance");
             ParamSlider::new(cx, Data::params, |params| &params.distance_b)
@@ -113,6 +126,24 @@ fn controlls(cx: &mut Context) {
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Density");
             ParamSlider::new(cx, Data::params, |params| &params.density_b)
+                .set_style(ParamSliderStyle::FromLeft);
+        })
+        .height(Auto);
+
+        VStack::new(cx, |cx| {
+            Label::new(cx, "Main")
+                .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
+                .font_weight(FontWeightKeyword::Thin)
+                .font_size(15.0)
+                .height(Pixels(20.0))
+                .child_top(Stretch(1.0))
+                .child_bottom(Pixels(0.0));
+
+            Label::new(cx, "Feedback");
+            ParamSlider::new(cx, Data::params, |params| &params.feedback)
+                .set_style(ParamSliderStyle::FromLeft);
+            Label::new(cx, "Color");
+            ParamSlider::new(cx, Data::params, |params| &params.color)
                 .set_style(ParamSliderStyle::FromLeft);
         })
         .height(Auto);

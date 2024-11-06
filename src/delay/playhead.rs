@@ -13,6 +13,7 @@ pub struct PlayHead {
     grain_size: f32,           // grain_size relative to window_size
     trig: Trig,                // triggers grains
     grains: Vec<Grain>,
+    grain_num: usize,
 }
 
 impl PlayHead {
@@ -24,6 +25,7 @@ impl PlayHead {
             window_size: 2.0,
             grain_size: 1.0,
             trig: Trig::new(),
+            grain_num,
             grains: {
                 let mut grains: Vec<Grain> = Vec::with_capacity(grain_num);
                 for _ in 0..grain_num {
@@ -83,13 +85,25 @@ impl PlayHead {
         }
     }
 
+    pub fn get_init_gain(&self) -> f32 {
+        let active_grain_num = self.grains.iter().filter(|grain| grain.active).count();
+        let ratio = active_grain_num as f32 / self.grain_num as f32;
+
+        let decay_factor = 0.7; 
+        let scaled_ratio = (1.0 - ratio).powf(decay_factor);
+
+        scaled_ratio.max(0.3)
+    }
+
     fn activate_grain(&mut self) {
+        let init_gain = self.get_init_gain();
         for grain in self.grains.iter_mut() {
             if !grain.active {
                 let pos = rand::random::<f32>() * 2.0 - 1.0;
                 grain.activate(
                     pos,
                     (self.window_size * self.grain_size * self.sample_rate) as usize,
+                    init_gain,
                 );
                 break;
             }
@@ -106,21 +120,23 @@ struct Grain {
     length: usize,
     counter: usize,
     gain: f32,
+    init_gain: f32,
     env: Envelope,
 }
 
 impl Grain {
-    fn activate(&mut self, pos: f32, length: usize) {
+    fn activate(&mut self, pos: f32, length: usize, init_gain: f32) {
         self.active = true;
         self.length = length;
         self.pos = pos;
         self.env.set_inc(1.0 / length as f64);
         self.stereo_pos = rand::random::<f32>() * 2.0 - 1.0;
+        self.init_gain = init_gain;
     }
 
     fn update(&mut self) {
         self.counter += 1;
-        self.gain = self.env.next_sample() as f32;
+        self.gain = self.env.next_sample() as f32 * self.init_gain;
         if self.counter > self.length {
             self.active = false;
             self.counter = 0;
