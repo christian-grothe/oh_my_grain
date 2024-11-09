@@ -5,13 +5,13 @@ use nih_plug_vizia::{
     vizia::{
         binding::Lens,
         context::{Context, DrawContext},
-        vg::{Color, Paint, Path},
+        vg::{Color, Paint, Path, Solidity},
         view::{Canvas, Handle, View},
     },
     widgets::param_base::ParamWidgetBase,
 };
 
-use crate::delay::Buffer;
+use crate::delay::{Buffer, Graindata};
 
 pub struct Waveform {
     dist_a_param: ParamWidgetBase,
@@ -19,12 +19,14 @@ pub struct Waveform {
     dist_b_param: ParamWidgetBase,
     window_size_b_param: ParamWidgetBase,
     buffer: Arc<RwLock<Buffer>>,
+    draw_data: Arc<RwLock<Vec<Graindata>>>,
 }
 
 impl Waveform {
     pub fn new<L, Params, P, DAMap, WAMap, DBMap, WBMap>(
         cx: &mut Context,
         buffer: Arc<RwLock<Buffer>>,
+        draw_data: Arc<RwLock<Vec<Graindata>>>,
         params: L,
         params_to_param_dist_a: DAMap,
         params_to_param_window_size_a: WAMap,
@@ -46,6 +48,7 @@ impl Waveform {
             dist_b_param: ParamWidgetBase::new(cx, params, params_to_param_dist_b),
             window_size_b_param: ParamWidgetBase::new(cx, params, params_to_param_window_size_b),
             buffer,
+            draw_data,
         }
         .build(cx, |_cx| ())
     }
@@ -64,6 +67,7 @@ impl View for Waveform {
         let paint = Paint::color(Color::rgb(100, 100, 100));
         let mut path = Path::new();
         let buffer = self.buffer.read().unwrap();
+
         let chunks = buffer.data.len() / 128;
 
         let buffer_to_draw: Vec<(f32, f32)> = buffer.data[buffer.write_head..]
@@ -95,21 +99,38 @@ impl View for Waveform {
         path.rect(
             bounds.x + bounds.w * (1.0 - self.dist_a_param.unmodulated_normalized_value()),
             bounds.y,
-            50.0 * self.window_size_a_param.unmodulated_normalized_value(),
+            5.0,
             bounds.h,
         );
 
-        canvas.stroke_path(&path, &paint);
+        canvas.fill_path(&path, &paint);
 
         let mut path = Path::new();
         let paint = Paint::color(Color::rgb(100, 200, 100));
         path.rect(
             bounds.x + bounds.w * (1.0 - self.dist_b_param.unmodulated_normalized_value()),
             bounds.y,
-            50.0 * self.window_size_b_param.unmodulated_normalized_value(),
+            5.0,
             bounds.h,
         );
 
-        canvas.stroke_path(&path, &paint);
+        canvas.fill_path(&path, &paint);
+
+        let draw_data = self.draw_data.read().unwrap();
+        let paint = Paint::color(Color::rgb(250, 200, 100));
+
+        draw_data.iter().for_each(|data| {
+            let mut path = Path::new();
+            let y = (data.stereo_pos + 1.0) / 2.0;
+            path.arc(
+                bounds.x + bounds.w * data.pos,
+                bounds.y + bounds.h * y,
+                1.0 + 5.0 * data.gain,
+                0.0,
+                2.0 * std::f32::consts::PI,
+                Solidity::Solid,
+            );
+            canvas.stroke_path(&path, &paint);
+        });
     }
 }

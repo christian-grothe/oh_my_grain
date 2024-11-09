@@ -31,8 +31,17 @@ pub struct Buffer {
     pub write_head: usize,
 }
 
+#[derive(Debug)]
+pub struct Graindata {
+    pub pos: f32,
+    pub stereo_pos: f32,
+    pub gain: f32,
+}
+
 pub struct Delay {
     pub buffer: Arc<RwLock<Buffer>>,
+    pub draw_data: Arc<RwLock<Vec<Graindata>>>,
+    draw_data_update_count: usize,
     pub sample_rate: f32,
     play_heads: Vec<playhead::PlayHead>,
     pub feedback: f32,
@@ -43,10 +52,16 @@ pub struct Delay {
 impl Delay {
     pub fn new(play_heads: usize, grain_num: usize) -> Self {
         Self {
-            buffer: Arc::new(RwLock::new(Buffer{
+            buffer: Arc::new(RwLock::new(Buffer {
                 data: vec![(0.0, 0.0); 1024],
-                write_head:0,
+                write_head: 0,
             })),
+            draw_data: Arc::new(RwLock::new(vec![Graindata {
+                pos: 0.0,
+                stereo_pos: 0.0,
+                gain: 0.0,
+            }])),
+            draw_data_update_count: 0,
             sample_rate: 0.0,
             feedback: 0.0,
             play_heads: (0..play_heads)
@@ -57,9 +72,10 @@ impl Delay {
         }
     }
 
-    pub fn init(&mut self, buffer_length: usize, sample_rate: f32) {
-        nih_plug::nih_log!("init delay, {:?}", buffer_length);
+    pub fn init(&mut self, buffer_length_sec: f32, sample_rate: f32) {
         let mut buffer = self.buffer.write().unwrap();
+        let buffer_length = (buffer_length_sec * sample_rate) as usize;
+
         buffer.data.resize(buffer_length, (0.0, 0.0));
 
         self.sample_rate = sample_rate;
@@ -86,6 +102,28 @@ impl Delay {
 
     pub fn set_alpha(&mut self, value: f32) {
         self.filter.alpha = value;
+    }
+
+    pub fn get_draw_data(&mut self) {
+        self.draw_data_update_count += 1;
+        if self.draw_data_update_count >=  self.sample_rate as usize / 60 {
+            let mut draw_data = self.draw_data.write().unwrap();
+            draw_data.clear();
+            self.play_heads.iter().for_each(|play_head| {
+                play_head.grains.iter().for_each(|grain| {
+                    if grain.active {
+                        draw_data.push(Graindata {
+                            pos: (grain.pos * play_head.window_size / 10.0) + 1.0
+                                - play_head.current_distance,
+                            stereo_pos: grain.stereo_pos,
+                            gain: grain.gain,
+                        })
+                    }
+                })
+            });
+
+            self.draw_data_update_count = 0;
+        }
     }
 
     fn write(&mut self, signal: (&f32, &f32)) {
@@ -124,9 +162,9 @@ impl Delay {
             feedback.0 += buffer.data[feedback_pos as usize % buffer.data.len()].0;
             feedback.1 += buffer.data[feedback_pos as usize % buffer.data.len()].1;
 
-            let grain_buffer = play_head.get_grain_data();
+            let grain_data = play_head.get_grain_data();
 
-            grain_buffer.iter().for_each(|(pos, gain, stereo_pos)| {
+            grain_data.iter().for_each(|(pos, gain, stereo_pos)| {
                 let abs_window_size = play_head.window_size * self.sample_rate;
                 let grain_offset = abs_window_size / 2.0 * pos;
 
@@ -154,6 +192,7 @@ impl Delay {
     }
 
     pub fn render(&mut self, samples: (&mut f32, &mut f32)) {
+        self.get_draw_data();
         self.write((samples.0, samples.1));
         self.read(samples);
     }

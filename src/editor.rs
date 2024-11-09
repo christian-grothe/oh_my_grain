@@ -6,7 +6,7 @@ use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
 use std::sync::{Arc, RwLock};
 use waveform::Waveform;
 
-use crate::delay::Buffer;
+use crate::delay::{Buffer, Graindata};
 use crate::GranularDelayParams;
 mod waveform;
 
@@ -25,6 +25,7 @@ pub(crate) fn create(
     params: Arc<GranularDelayParams>,
     editor_state: Arc<ViziaState>,
     buffer: Arc<RwLock<Buffer>>,
+    draw_data: Arc<RwLock<Vec<Graindata>>>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
         assets::register_noto_sans_light(cx);
@@ -42,16 +43,17 @@ pub(crate) fn create(
         VStack::new(cx, |cx| {
             top_bar(cx);
             controlls(cx);
-            waveform(cx, buffer.clone());
+            waveform(cx, buffer.clone(), draw_data.clone());
         });
     })
 }
 
-fn waveform(cx: &mut Context, buffer: Arc<RwLock<Buffer>>) {
+fn waveform(cx: &mut Context, buffer: Arc<RwLock<Buffer>>, draw_data: Arc<RwLock<Vec<Graindata>>>) {
     HStack::new(cx, |cx| {
         Waveform::new(
             cx,
             buffer,
+            draw_data,
             Data::params,
             |params| &params.distance_a,
             |params| &params.window_size_a,
@@ -62,7 +64,6 @@ fn waveform(cx: &mut Context, buffer: Arc<RwLock<Buffer>>) {
     .min_top(Pixels(30.0))
     .height(Pixels(100.0))
     .class("section");
-
 }
 
 fn top_bar(cx: &mut Context) {
@@ -88,7 +89,6 @@ fn controlls(cx: &mut Context) {
                 .child_top(Stretch(1.0))
                 .child_bottom(Pixels(0.0))
                 .color(Color::rgb(200, 100, 100));
-            
 
             Label::new(cx, "Distance");
             ParamSlider::new(cx, Data::params, |params| &params.distance_a)

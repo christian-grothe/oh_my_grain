@@ -157,6 +157,7 @@ impl Plugin for GranularDelay {
             self.params.clone(),
             self.params.editor_state.clone(),
             self.delay.buffer.clone(),
+            self.delay.draw_data.clone(),
         )
     }
 
@@ -166,10 +167,7 @@ impl Plugin for GranularDelay {
         buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        self.delay.init(
-            10 * buffer_config.sample_rate as usize,
-            buffer_config.sample_rate,
-        );
+        self.delay.init(10.0, buffer_config.sample_rate);
         true
     }
 

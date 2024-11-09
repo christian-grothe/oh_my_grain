@@ -7,12 +7,12 @@ fn lerp(v0: f32, v1: f32, t: f32) -> f32 {
 #[allow(dead_code)]
 pub struct PlayHead {
     sample_rate: f32,
-    distance: f32,             // distance from record_head range 0-1
+    pub distance: f32,             // distance from record_head range 0-1
     pub current_distance: f32, // current distance interpolates to distance
     pub window_size: f32,      // window_size relative to sample_rate
     grain_size: f32,           // grain_size relative to window_size
     trig: Trig,                // triggers grains
-    grains: Vec<Grain>,
+    pub grains: Vec<Grain>,
     grain_num: usize,
 }
 
@@ -113,13 +113,13 @@ impl PlayHead {
 
 #[derive(Default)]
 #[allow(dead_code)]
-struct Grain {
-    active: bool,
-    pos: f32, // position in window -1 to 1
-    stereo_pos: f32,
+pub struct Grain {
+    pub active: bool,
+    pub pos: f32, // position in window -1 to 1
+    pub stereo_pos: f32,
     length: usize,
     counter: usize,
-    gain: f32,
+    pub gain: f32,
     init_gain: f32,
     env: Envelope,
 }
