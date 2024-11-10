@@ -1,11 +1,11 @@
 [package]
-name = "granular_delay"
+name = "oh_my_grain"
 version = "0.1.0"
 edition = "2021"
 authors = ["Christian Grothe <christian.grothe@posteo.de>"]
 license = "GPL-3.0-or-later"
 homepage = "https://christian-grothe.com"
-description = "A simple granular delay"
+description = "A granular delay"
 
 [workspace]
 members = ["xtask"]

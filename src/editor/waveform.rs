@@ -13,40 +13,35 @@ use nih_plug_vizia::{
 
 use crate::delay::{Buffer, Graindata};
 
+const RED: (u8, u8, u8) = (201, 104, 104);
+const GREEN: (u8, u8, u8) = (165, 182, 141);
+
 pub struct Waveform {
     dist_a_param: ParamWidgetBase,
-    window_size_a_param: ParamWidgetBase,
     dist_b_param: ParamWidgetBase,
-    window_size_b_param: ParamWidgetBase,
     buffer: Arc<RwLock<Buffer>>,
     draw_data: Arc<RwLock<Vec<Graindata>>>,
 }
 
 impl Waveform {
-    pub fn new<L, Params, P, DAMap, WAMap, DBMap, WBMap>(
+    pub fn new<L, Params, P, AMap, BMap>(
         cx: &mut Context,
         buffer: Arc<RwLock<Buffer>>,
         draw_data: Arc<RwLock<Vec<Graindata>>>,
         params: L,
-        params_to_param_dist_a: DAMap,
-        params_to_param_window_size_a: WAMap,
-        params_to_param_dist_b: DBMap,
-        params_to_param_window_size_b: WBMap,
+        params_to_param_dist_a: AMap,
+        params_to_param_dist_b: BMap,
     ) -> Handle<Self>
     where
         L: Lens<Target = Params> + Clone,
         Params: 'static,
         P: Param + 'static,
-        DAMap: Fn(&Params) -> &P + Copy + 'static,
-        WAMap: Fn(&Params) -> &P + Copy + 'static,
-        DBMap: Fn(&Params) -> &P + Copy + 'static,
-        WBMap: Fn(&Params) -> &P + Copy + 'static,
+        AMap: Fn(&Params) -> &P + Copy + 'static,
+        BMap: Fn(&Params) -> &P + Copy + 'static,
     {
         Self {
             dist_a_param: ParamWidgetBase::new(cx, params, params_to_param_dist_a),
-            window_size_a_param: ParamWidgetBase::new(cx, params, params_to_param_window_size_a),
             dist_b_param: ParamWidgetBase::new(cx, params, params_to_param_dist_b),
-            window_size_b_param: ParamWidgetBase::new(cx, params, params_to_param_window_size_b),
             buffer,
             draw_data,
         }
@@ -64,7 +59,7 @@ impl View for Waveform {
             return;
         }
 
-        let paint = Paint::color(Color::rgb(100, 100, 100));
+        let paint = Paint::color(Color::rgb(200, 200, 200));
         let mut path = Path::new();
         let buffer = self.buffer.read().unwrap();
 
@@ -95,9 +90,9 @@ impl View for Waveform {
         canvas.fill_path(&path, &paint);
 
         let mut path = Path::new();
-        let paint = Paint::color(Color::rgb(200, 100, 100));
+        let paint = Paint::color(Color::rgb(RED.0, RED.1, RED.2));
         path.rect(
-            bounds.x + bounds.w * (1.0 - self.dist_a_param.unmodulated_normalized_value()),
+            bounds.x + bounds.w * (1.0 - self.dist_a_param.unmodulated_normalized_value()) - 2.5,
             bounds.y,
             5.0,
             bounds.h,
@@ -106,9 +101,9 @@ impl View for Waveform {
         canvas.fill_path(&path, &paint);
 
         let mut path = Path::new();
-        let paint = Paint::color(Color::rgb(100, 200, 100));
+        let paint = Paint::color(Color::rgb(GREEN.0, GREEN.1, GREEN.2));
         path.rect(
-            bounds.x + bounds.w * (1.0 - self.dist_b_param.unmodulated_normalized_value()),
+            bounds.x + bounds.w * (1.0 - self.dist_b_param.unmodulated_normalized_value()) - 2.5,
             bounds.y,
             5.0,
             bounds.h,
@@ -117,7 +112,7 @@ impl View for Waveform {
         canvas.fill_path(&path, &paint);
 
         let draw_data = self.draw_data.read().unwrap();
-        let paint = Paint::color(Color::rgb(250, 200, 100));
+        let paint = Paint::color(Color::hex("#F6EABE"));
 
         draw_data.iter().for_each(|data| {
             let mut path = Path::new();
@@ -128,7 +123,7 @@ impl View for Waveform {
                 1.0 + 5.0 * data.gain,
                 0.0,
                 2.0 * std::f32::consts::PI,
-                Solidity::Solid,
+                Solidity::Hole,
             );
             canvas.stroke_path(&path, &paint);
         });

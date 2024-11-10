@@ -10,6 +10,9 @@ use crate::delay::{Buffer, Graindata};
 use crate::GranularDelayParams;
 mod waveform;
 
+const RED: (u8, u8, u8) = (201, 104, 104);
+const GREEN: (u8, u8, u8) = (165, 182, 141);
+
 #[derive(Lens)]
 struct Data {
     params: Arc<GranularDelayParams>,
@@ -18,7 +21,7 @@ struct Data {
 impl Model for Data {}
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (600, 400))
+    ViziaState::new(|| (600, 450))
 }
 
 pub(crate) fn create(
@@ -56,26 +59,29 @@ fn waveform(cx: &mut Context, buffer: Arc<RwLock<Buffer>>, draw_data: Arc<RwLock
             draw_data,
             Data::params,
             |params| &params.distance_a,
-            |params| &params.window_size_a,
             |params| &params.distance_b,
-            |params| &params.window_size_b,
         );
     })
     .min_top(Pixels(30.0))
+    .left(Pixels(15.0))
+    .right(Pixels(15.0))
     .height(Pixels(100.0))
-    .class("section");
+    .class("waveform");
 }
 
 fn top_bar(cx: &mut Context) {
     HStack::new(cx, |cx| {
-        Label::new(cx, "Granular Delay")
+        Label::new(cx, "Oh-My-Grain")
             .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
             .font_weight(FontWeightKeyword::Thin)
-            .font_size(37.0)
-            .top(Pixels(2.0))
-            .left(Pixels(8.0));
+            .font_size(25.0);
     })
-    .height(Pixels(50.0));
+    .left(Pixels(15.0))
+    .top(Pixels(10.0))
+    .right(Pixels(15.0))
+    .height(Pixels(50.0))
+    .text_align(TextAlign::Right)
+    .width(Stretch(1.0));
 }
 
 fn controlls(cx: &mut Context) {
@@ -83,24 +89,28 @@ fn controlls(cx: &mut Context) {
         VStack::new(cx, |cx| {
             Label::new(cx, "Playhead A")
                 .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
-                .font_weight(FontWeightKeyword::Thin)
+                .font_weight(FontWeightKeyword::Medium)
                 .font_size(15.0)
                 .height(Pixels(20.0))
                 .child_top(Stretch(1.0))
                 .child_bottom(Pixels(0.0))
-                .color(Color::rgb(200, 100, 100));
+                .color(Color::rgb(RED.0, RED.1, RED.2));
 
             Label::new(cx, "Distance");
             ParamSlider::new(cx, Data::params, |params| &params.distance_a)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Window Size");
             ParamSlider::new(cx, Data::params, |params| &params.window_size_a)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Grain Size");
+            Label::new(cx, "Grain Length");
             ParamSlider::new(cx, Data::params, |params| &params.grain_size_a)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Density");
             ParamSlider::new(cx, Data::params, |params| &params.density_a)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
         })
         .height(Auto);
@@ -108,24 +118,28 @@ fn controlls(cx: &mut Context) {
         VStack::new(cx, |cx| {
             Label::new(cx, "Playhead B")
                 .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
-                .font_weight(FontWeightKeyword::Thin)
+                .font_weight(FontWeightKeyword::Medium)
                 .font_size(15.0)
                 .height(Pixels(20.0))
                 .child_top(Stretch(1.0))
                 .child_bottom(Pixels(0.0))
-                .color(Color::rgb(100, 200, 100));
+                .color(Color::rgb(GREEN.0, GREEN.1, GREEN.2));
 
             Label::new(cx, "Distance");
             ParamSlider::new(cx, Data::params, |params| &params.distance_b)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Window Size");
             ParamSlider::new(cx, Data::params, |params| &params.window_size_b)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Grain Size");
+            Label::new(cx, "Grain Length");
             ParamSlider::new(cx, Data::params, |params| &params.grain_size_b)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Density");
             ParamSlider::new(cx, Data::params, |params| &params.density_b)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
         })
         .height(Auto);
@@ -141,12 +155,16 @@ fn controlls(cx: &mut Context) {
 
             Label::new(cx, "Feedback");
             ParamSlider::new(cx, Data::params, |params| &params.feedback)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Color");
             ParamSlider::new(cx, Data::params, |params| &params.color)
+                .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
         })
         .height(Auto);
     })
+    .left(Pixels(15.0))
+    .right(Pixels(15.0))
     .height(Auto);
 }

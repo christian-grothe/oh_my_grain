@@ -1694,15 +1694,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "granular_delay"
-version = "0.1.0"
-dependencies = [
- "nih_plug",
- "nih_plug_vizia",
- "rand 0.8.5",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2526,6 +2517,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8bb09a4a2b1d668170cfe0a7d5bc103f8999fb316c98099b6a9939c9f2e79d"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "oh_my_grain"
+version = "0.1.0"
+dependencies = [
+ "nih_plug",
+ "nih_plug_vizia",
+ "rand 0.8.5",
 ]
 
 [[package]]

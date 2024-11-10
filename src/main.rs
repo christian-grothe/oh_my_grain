@@ -1,4 +1,4 @@
-use granular_delay::GranularDelay;
+use oh_my_grain::GranularDelay;
 use nih_plug::prelude::*;
 
 fn main() {

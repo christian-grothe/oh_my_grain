@@ -112,7 +112,7 @@ impl Default for GranularDelayParams {
 }
 
 impl Plugin for GranularDelay {
-    const NAME: &'static str = "Granular Delay";
+    const NAME: &'static str = "Oh My Grain";
     const VENDOR: &'static str = "Christian Grothe";
     const URL: &'static str = env!("CARGO_PKG_HOMEPAGE");
     const EMAIL: &'static str = "christian.grothe@posteo.de";
@@ -211,8 +211,8 @@ impl Plugin for GranularDelay {
 }
 
 impl ClapPlugin for GranularDelay {
-    const CLAP_ID: &'static str = "com.christian-grothe.granular-delay";
-    const CLAP_DESCRIPTION: Option<&'static str> = Some("A simple granular delay");
+    const CLAP_ID: &'static str = "com.christian-grothe.oh-my-grain";
+    const CLAP_DESCRIPTION: Option<&'static str> = Some("A granular delay");
     const CLAP_MANUAL_URL: Option<&'static str> = Some(Self::URL);
     const CLAP_SUPPORT_URL: Option<&'static str> = None;
 

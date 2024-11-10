@@ -106,15 +106,14 @@ impl Delay {
 
     pub fn get_draw_data(&mut self) {
         self.draw_data_update_count += 1;
-        if self.draw_data_update_count >=  self.sample_rate as usize / 60 {
+        if self.draw_data_update_count >= self.sample_rate as usize / 60 {
             let mut draw_data = self.draw_data.write().unwrap();
             draw_data.clear();
             self.play_heads.iter().for_each(|play_head| {
                 play_head.grains.iter().for_each(|grain| {
                     if grain.active {
                         draw_data.push(Graindata {
-                            pos: (grain.pos * play_head.window_size / 10.0) + 1.0
-                                - play_head.current_distance,
+                            pos: 1.0 - grain.pos,
                             stereo_pos: grain.stereo_pos,
                             gain: grain.gain,
                         })
@@ -165,10 +164,9 @@ impl Delay {
             let grain_data = play_head.get_grain_data();
 
             grain_data.iter().for_each(|(pos, gain, stereo_pos)| {
-                let abs_window_size = play_head.window_size * self.sample_rate;
-                let grain_offset = abs_window_size / 2.0 * pos;
+                let offset = buffer_size * pos;
 
-                let mut read_pos = (buffer.write_head as f32 - offset) + grain_offset;
+                let mut read_pos = buffer.write_head as f32 - offset;
 
                 if read_pos < 0.0 {
                     read_pos += buffer_size;

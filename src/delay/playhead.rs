@@ -7,7 +7,7 @@ fn lerp(v0: f32, v1: f32, t: f32) -> f32 {
 #[allow(dead_code)]
 pub struct PlayHead {
     sample_rate: f32,
-    pub distance: f32,             // distance from record_head range 0-1
+    pub distance: f32,         // distance from record_head range 0-1
     pub current_distance: f32, // current distance interpolates to distance
     pub window_size: f32,      // window_size relative to sample_rate
     grain_size: f32,           // grain_size relative to window_size
@@ -89,7 +89,7 @@ impl PlayHead {
         let active_grain_num = self.grains.iter().filter(|grain| grain.active).count();
         let ratio = active_grain_num as f32 / self.grain_num as f32;
 
-        let decay_factor = 0.7; 
+        let decay_factor = 0.7;
         let scaled_ratio = (1.0 - ratio).powf(decay_factor);
 
         scaled_ratio.max(0.3)
@@ -102,8 +102,10 @@ impl PlayHead {
                 let pos = rand::random::<f32>() * 2.0 - 1.0;
                 grain.activate(
                     pos,
-                    (self.window_size * self.grain_size * self.sample_rate) as usize,
+                    (self.grain_size * self.sample_rate) as usize, // max 1sec
                     init_gain,
+                    self.window_size,
+                    self.current_distance,
                 );
                 break;
             }
@@ -125,10 +127,17 @@ pub struct Grain {
 }
 
 impl Grain {
-    fn activate(&mut self, pos: f32, length: usize, init_gain: f32) {
+    fn activate(&mut self, pos: f32, length: usize, init_gain: f32, window_size: f32, dist: f32) {
+        self.pos = window_size * 0.5 / 2.0 * pos + dist;
+
+        if self.pos < 0.0 {
+            self.pos = 1.0 + self.pos;
+        } else if self.pos > 1.0 {
+            self.pos = self.pos - 1.0;
+        }
+
         self.active = true;
         self.length = length;
-        self.pos = pos;
         self.env.set_inc(1.0 / length as f64);
         self.stereo_pos = rand::random::<f32>() * 2.0 - 1.0;
         self.init_gain = init_gain;

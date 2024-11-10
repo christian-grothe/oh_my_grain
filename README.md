@@ -1,3 +1,3 @@
-# Granular Delay
+# Oh My Grain
 
-This is gonna be some kind of granular delay once finished.
+A granular delay plugin written in rust
