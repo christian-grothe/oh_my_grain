@@ -4,5 +4,5 @@
 # [package_name]
 # name = "Human Readable Plugin Name"  # defaults to <package_name>
 
-[granular_delay]
+[oh_my_grain]
 name = "Oh My Grain"
