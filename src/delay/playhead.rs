@@ -9,8 +9,8 @@ pub struct PlayHead {
     sample_rate: f32,
     pub distance: f32,         // distance from record_head range 0-1
     pub current_distance: f32, // current distance interpolates to distance
-    pub window_size: f32,      // window_size relative to sample_rate
-    grain_size: f32,           // grain_size relative to window_size
+    pub window_size: f32,      // window_size range between 0-1 
+    grain_size: f32,          
     trig: Trig,                // triggers grains
     pub grains: Vec<Grain>,
     grain_num: usize,
