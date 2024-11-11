@@ -1,14 +1,17 @@
 name: Automated Builds
 
+# slightly adapted from:
+# https://github.com/robbert-vdh/nih-plug/blob/master/.github/workflows/build.yml
+permissions:
+  contents: write
+  actions: read
+
 on:
   push:
     branches:
-      - "**"
+      - "master"
     tags:
       - "*"
-  pull_request:
-    branches:
-      - master
 
 defaults:
   run:
@@ -24,14 +27,14 @@ jobs:
           - { name: ubuntu-20.04, os: ubuntu-20.04, cross-target: "" }
           - {
               name: macos-universal,
-              os: macos-15,
+              os: macos-13,
               cross-target: aarch64-apple-darwin,
             }
           - { name: windows, os: windows-latest, cross-target: "" }
     name: Package plugin binaries
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.2.1
       - name: Fetch all git history
         run: git fetch --force --prune --tags --unshallow
 
@@ -40,8 +43,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libasound2-dev libgl-dev libjack-dev libx11-xcb-dev  libxcb1-dev libxcb-dri2-0-dev libxcb-icccm4-dev libxcursor-dev libxkbcommon-dev libxcb-shape0-dev libxcb-xfixes0-dev
-
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4.1.1
         # FIXME: Caching `target/` causes the Windows runner to blow up after some time
         if: startsWith(matrix.os, 'windows')
         with:
@@ -50,7 +52,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
           key: ${{ matrix.name }}-${{ matrix.cross-target }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4.1.1
         if: "!startsWith(matrix.os, 'windows')"
         with:
           path: |
@@ -59,9 +61,6 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ matrix.name }}-${{ matrix.cross-target }}
-
-      - name: Install macOS target
-        run: rustup target add x86_64-apple-darwin # Add this step to install the macOS target
 
       - name: Set up Rust toolchain
         # Needed for SIMD
@@ -79,7 +78,6 @@ jobs:
           for package in $(cargo xtask known-packages); do
             package_args+=("-p" "$package")
           done
-
           runner_name=${{ matrix.name }}
           if [[ $runner_name = 'macos-universal' ]]; then
             export MACOSX_DEPLOYMENT_TARGET=10.13
@@ -89,14 +87,12 @@ jobs:
             if [[ -n $cross_target ]]; then
               package_args+=("--target" "$cross_target")
             fi
-
             cargo xtask bundle "${package_args[@]}" --release
           fi
-
       - name: Determine build archive name
         run: |
           # Windows (usually) doesn't like colons in file names
-          echo "ARCHIVE_NAME=oh-my-grain-$(date -u +"%Y-%m-%d-%H%m%S")-${{ matrix.name }}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=go-my-grain-$(date -u +"%Y-%m-%d-%H%m%S")-${{ matrix.name }}" >> "$GITHUB_ENV"
       - name: Move all packaged plugin into a directory
         run: |
           # GitHub Action strips the top level directory, great, have another one
@@ -104,7 +100,24 @@ jobs:
           mv target/bundled/* "$ARCHIVE_NAME/$ARCHIVE_NAME"
       - name: Add an OS-specific readme file with installation instructions
         run: cp ".github/workflows/readme-${{ runner.os }}.txt" "$ARCHIVE_NAME/$ARCHIVE_NAME/README.txt"
-      - uses: actions/upload-artifact@v3
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
+
+      - name: Zip Release
+        uses: thedoctor0/zip-release@0.7.6
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          type: "zip"
+          directory: ${{ env.ARCHIVE_NAME }}/${{ env.ARCHIVE_NAME }}
+          filename: DEL2-${{  github.ref_name }}-${{ matrix.name }}.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v2.0.8
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ env.ARCHIVE_NAME }}/${{ env.ARCHIVE_NAME }}/*.zip
