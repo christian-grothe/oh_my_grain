@@ -78,7 +78,12 @@ impl View for Waveform {
             .collect();
 
         for (i, (l, r)) in buffer_to_draw.iter().enumerate() {
-            let bar_height = (*l + *r) / chunks as f32;
+            let mut bar_height = (*l + *r) / chunks as f32;
+
+            if bar_height > 1.0 {
+                bar_height = 1.0;
+            }
+
             path.rect(
                 bounds.x + bounds.w * i as f32 / buffer_to_draw.len() as f32,
                 (bounds.y + bounds.h / 2.0) - (bounds.h * bar_height / 2.0),

@@ -129,6 +129,8 @@ fn controlls(cx: &mut Context) {
             ParamSlider::new(cx, Data::params, |params| &params.distance_b)
                 .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
+               
+
             Label::new(cx, "Window Size");
             ParamSlider::new(cx, Data::params, |params| &params.window_size_b)
                 .bottom(Pixels(10.0))
@@ -159,6 +161,14 @@ fn controlls(cx: &mut Context) {
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Color");
             ParamSlider::new(cx, Data::params, |params| &params.color)
+                .bottom(Pixels(10.0))
+                .set_style(ParamSliderStyle::FromLeft);
+            Label::new(cx, "Dry");
+            ParamSlider::new(cx, Data::params, |params| &params.dry)
+                .bottom(Pixels(10.0))
+                .set_style(ParamSliderStyle::FromLeft);
+            Label::new(cx, "Wet");
+            ParamSlider::new(cx, Data::params, |params| &params.wet)
                 .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
         })

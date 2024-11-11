@@ -40,6 +40,10 @@ struct GranularDelayParams {
     pub feedback: FloatParam,
     #[id = "color"]
     pub color: FloatParam,
+    #[id = "dry"]
+    pub dry: FloatParam,
+    #[id = "wet"]
+    pub wet: FloatParam,
 }
 
 impl Default for GranularDelay {
@@ -63,22 +67,32 @@ impl Default for GranularDelayParams {
                     min: 0.125,
                     max: 50.0,
                 },
-            ),
+            )
+            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
+
             distance_a: FloatParam::new(
                 "Distance A",
                 0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
             window_size_a: FloatParam::new(
                 "Window Size A",
                 0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
             grain_size_a: FloatParam::new(
                 "Grain Size A",
                 0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
             density_b: FloatParam::new(
                 "Density B",
@@ -87,26 +101,47 @@ impl Default for GranularDelayParams {
                     min: 0.125,
                     max: 50.0,
                 },
-            ),
+            )
+            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
+
             distance_b: FloatParam::new(
                 "Distance B",
                 0.25,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
             window_size_b: FloatParam::new(
                 "Window Size B",
                 0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
             grain_size_b: FloatParam::new(
                 "Grain Size B",
                 0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
-            feedback: FloatParam::new("Feedback", 0.45, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            feedback: FloatParam::new("Feedback", 0.45, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit(" %")
+                .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
-            color: FloatParam::new("Color", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            color: FloatParam::new("Color", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_value_to_string(formatters::v2s_f32_rounded(2)),
+
+            dry: FloatParam::new("Dry", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit(" %")
+                .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            wet: FloatParam::new("Wet", 0.85, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit(" %")
+                .with_value_to_string(formatters::v2s_f32_percentage(0)),
         }
     }
 }
@@ -196,6 +231,8 @@ impl Plugin for GranularDelay {
             .set_window_size(1, self.params.window_size_b.smoothed.next());
         self.delay
             .set_grain_size(1, self.params.grain_size_b.smoothed.next());
+        self.delay.set_dry(self.params.dry.smoothed.next());
+        self.delay.set_wet(self.params.wet.smoothed.next());
 
         for channels in buffer.iter_samples() {
             let mut sample_channels = channels.into_iter();

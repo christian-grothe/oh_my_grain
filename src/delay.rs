@@ -47,6 +47,8 @@ pub struct Delay {
     pub feedback: f32,
     filter: OnePole,
     feedback_sample: (f32, f32),
+    dry: f32,
+    wet: f32,
 }
 
 impl Delay {
@@ -69,6 +71,8 @@ impl Delay {
                 .collect(),
             filter: OnePole::new(),
             feedback_sample: (0.0, 0.0),
+            dry: 1.0,
+            wet: 1.0,
         }
     }
 
@@ -104,6 +108,16 @@ impl Delay {
         self.filter.alpha = value;
     }
 
+    pub fn set_dry(&mut self, value: f32) {
+        self.dry = value;
+    }
+
+    pub fn set_wet(&mut self, value: f32) {
+        self.wet = value;
+    }
+
+
+
     pub fn get_draw_data(&mut self) {
         self.draw_data_update_count += 1;
         if self.draw_data_update_count >= self.sample_rate as usize / 60 {
@@ -127,8 +141,8 @@ impl Delay {
 
     fn write(&mut self, signal: (&f32, &f32)) {
         let feedback = (
-            self.feedback_sample.0 * self.feedback,
-            self.feedback_sample.1 * self.feedback,
+            self.feedback_sample.0 * self.feedback * 0.5,
+            self.feedback_sample.1 * self.feedback * 0.5,
         );
 
         let feedback = self.filter.next(feedback);
@@ -183,10 +197,12 @@ impl Delay {
         }
 
         self.feedback_sample = feedback;
-        //TBD DRY WET
-        //*sample *= 0.0;
-        *signal.0 += out.0;
-        *signal.1 += out.1;
+
+        *signal.0 *= self.dry;
+        *signal.1 *= self.dry;
+
+        *signal.0 += out.0 * self.wet;
+        *signal.1 += out.1 * self.wet;
     }
 
     pub fn render(&mut self, samples: (&mut f32, &mut f32)) {
