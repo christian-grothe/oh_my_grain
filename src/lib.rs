@@ -221,7 +221,7 @@ impl ClapPlugin for GranularDelay {
 }
 
 impl Vst3Plugin for GranularDelay {
-    const VST3_CLASS_ID: [u8; 16] = *b"_granular_delay_";
+    const VST3_CLASS_ID: [u8; 16] = *b"_oh__my__grain__";
 
     // And also don't forget to change these categories
     const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] =
