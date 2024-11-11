@@ -3,9 +3,9 @@ name: Automated Builds
 on:
   push:
     branches:
-      - '**'
+      - "**"
     tags:
-      - '*'
+      - "*"
   pull_request:
     branches:
       - master
@@ -21,9 +21,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - { name: ubuntu-20.04,       os: ubuntu-20.04,   cross-target: '' }
-          - { name: macos-universal,    os: macos-15,       cross-target: aarch64-apple-darwin }
-          - { name: windows,            os: windows-latest, cross-target: '' }
+          - { name: ubuntu-20.04, os: ubuntu-20.04, cross-target: "" }
+          - {
+              name: macos-universal,
+              os: macos-15,
+              cross-target: aarch64-apple-darwin,
+            }
+          - { name: windows, os: windows-latest, cross-target: "" }
     name: Package plugin binaries
     runs-on: ${{ matrix.os }}
     steps:
@@ -55,6 +59,9 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ matrix.name }}-${{ matrix.cross-target }}
+
+      - name: Install macOS target
+        run: rustup target add x86_64-apple-darwin # Add this step to install the macOS target
 
       - name: Set up Rust toolchain
         # Needed for SIMD
