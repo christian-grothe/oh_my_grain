@@ -83,7 +83,7 @@ jobs:
             export MACOSX_DEPLOYMENT_TARGET=10.13
             cargo xtask bundle-universal "${package_args[@]}" --release
 
-            pkgbuild --identifier com.oh-my-grain.timerift --version 1.0 --root target/bundled/oh-my-grain.vst3 --install-location "/Library/Audio/Plug-Ins/VST3" "target/bundled"
+            pkgbuild --identifier com.oh-my-grain.timerift --version 1.0 --root target/bundled/oh-my-grain.vst3 --install-location "/Library/Audio/Plug-Ins/VST3" "target/bundled/oh-my-grain-vst3.pkg"
 
           else
             cross_target=${{ matrix.cross-target }}
