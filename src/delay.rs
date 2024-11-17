@@ -33,22 +33,17 @@ pub struct Buffer {
 
 impl Buffer {
     fn get_cubic_sample(&self, pos: f32) -> (f32, f32) {
-        // Circular buffer size
         let len = self.data.len();
 
-        // Integer index of the base sample
         let base = pos.floor() as usize;
 
-        // Fractional part of the position
         let t = pos - pos.floor();
 
-        // Fetch the four samples (wrapping around the circular buffer)
         let p0 = self.data[(base.wrapping_sub(1)) % len];
         let p1 = self.data[base % len];
         let p2 = self.data[(base + 1) % len];
         let p3 = self.data[(base + 2) % len];
 
-        // Perform cubic interpolation
         let left = p1.0
             + 0.5
                 * t
@@ -118,11 +113,15 @@ impl Delay {
 
         self.sample_rate = sample_rate;
         self.play_heads.iter_mut().for_each(|play_head| {
-            play_head.set_sample_rate(sample_rate);
+            play_head.init(sample_rate, buffer_length_sec);
         });
     }
 
-    pub fn set_pitch(&mut self,index:usize, value: i32) {
+    pub fn set_gain(&mut self, index: usize, value: f32) {
+        self.play_heads[index].set_gain(value);
+    }
+
+    pub fn set_pitch(&mut self, index: usize, value: i32) {
         self.play_heads[index].set_pitch(value);
     }
 
@@ -224,16 +223,12 @@ impl Delay {
                     read_pos += buffer_size;
                 }
 
-                //let index = read_pos as usize % buffer.data.len();
-
                 let left_gain = 0.5 * (1.0 - stereo_pos);
                 let right_gain = 0.5 * (1.0 + stereo_pos);
 
                 let (left_sample, right_sample) = buffer.get_cubic_sample(read_pos);
 
-                // let left_sample = buffer.data[index].clone().0 * *gain * left_gain;
-                // let right_sample = buffer.data[index].clone().1 * *gain * right_gain;
-
+                // this seems not to work so just using FeedbackSrc::Playhead for now
                 if play_head.feedback_src == playhead::FeedbackSrc::Grain {
                     feedback.0 += left_sample;
                     feedback.1 += right_sample;

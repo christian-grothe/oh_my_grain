@@ -116,6 +116,10 @@ fn controlls(cx: &mut Context) {
             ParamSlider::new(cx, Data::params, |params| &params.pitch_a)
                 .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
+            Label::new(cx, "Gain");
+            ParamSlider::new(cx, Data::params, |params| &params.gain_a)
+                .bottom(Pixels(10.0))
+                .set_style(ParamSliderStyle::FromLeft);
         })
         .height(Auto);
 
@@ -149,6 +153,10 @@ fn controlls(cx: &mut Context) {
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Pitch");
             ParamSlider::new(cx, Data::params, |params| &params.pitch_b)
+                .bottom(Pixels(10.0))
+                .set_style(ParamSliderStyle::FromLeft);
+            Label::new(cx, "Gain");
+            ParamSlider::new(cx, Data::params, |params| &params.gain_b)
                 .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
         })

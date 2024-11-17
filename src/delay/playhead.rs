@@ -12,6 +12,7 @@ pub enum FeedbackSrc {
 
 pub struct PlayHead {
     sample_rate: f32,
+    buffer_length_sec: f32,
     pub distance: f32,         // distance from record_head range 0-1
     pub current_distance: f32, // current distance interpolates to distance
     pub window_size: f32,      // window_size range between 0-1
@@ -21,16 +22,18 @@ pub struct PlayHead {
     grain_num: usize,
     pub feedback_src: FeedbackSrc,
     pitch: i32,
+    gain: f32,
 }
 
 impl PlayHead {
     pub fn new(distance: f32, grain_num: usize) -> Self {
         PlayHead {
             sample_rate: 0.0,
+            buffer_length_sec: 0.0,
             distance,
             current_distance: distance,
-            window_size: 2.0,
-            grain_size: 1.0,
+            window_size: 0.0,
+            grain_size: 0.0,
             trig: Trig::new(),
             grain_num,
             grains: {
@@ -42,6 +45,7 @@ impl PlayHead {
             },
             feedback_src: FeedbackSrc::Playhead,
             pitch: 0,
+            gain: 0.0,
         }
     }
 
@@ -52,6 +56,10 @@ impl PlayHead {
 
     pub fn set_pitch(&mut self, pitch: i32) {
         self.pitch = pitch;
+    }
+
+    pub fn set_gain(&mut self, gain: f32) {
+        self.gain = gain;
     }
 
     pub fn set_window_size(&mut self, window_size: f32) {
@@ -66,14 +74,15 @@ impl PlayHead {
         self.distance = distance;
     }
 
-    pub fn set_sample_rate(&mut self, sample_rate: f32) {
+    pub fn init(&mut self, sample_rate: f32, buffer_length_sec: f32) {
         self.sample_rate = sample_rate;
+        self.buffer_length_sec = buffer_length_sec;
         self.trig.set_sample_rate(sample_rate);
     }
 
     pub fn set_current_distance(&mut self) {
         if self.current_distance != self.distance {
-            self.current_distance = lerp(self.current_distance, self.distance, 0.00001);
+            self.current_distance = lerp(self.current_distance, self.distance, 0.001);
         }
     }
 
@@ -98,7 +107,7 @@ impl PlayHead {
         }
         for grain in self.grains.iter_mut() {
             if grain.active {
-                grain.update(self.pitch);
+                grain.update(self.pitch, self.gain);
             }
         }
     }
@@ -123,8 +132,9 @@ impl PlayHead {
                     (self.grain_size * self.sample_rate) as usize, // max 1sec
                     init_gain,
                     self.window_size,
-                    self.current_distance,
+                    self.distance,
                     self.sample_rate,
+                    self.buffer_length_sec,
                 );
                 break;
             }
@@ -139,6 +149,7 @@ pub struct Grain {
     pub pos: f32, // position in window -1 to 1
     pub stereo_pos: f32,
     sample_rate: f32,
+    buffer_length_sec: f32,
     length: usize,
     counter: usize,
     pub gain: f32,
@@ -153,10 +164,11 @@ impl Grain {
         length: usize,
         init_gain: f32,
         window_size: f32,
-        dist: f32,
+        playhead_distance: f32,
         sample_rate: f32,
+        buffer_length_sec: f32,
     ) {
-        self.pos = window_size * 0.5 / 2.0 * pos + dist;
+        self.pos = window_size * 0.25 * pos + playhead_distance;
 
         if self.pos < 0.0 {
             self.pos = 1.0 + self.pos;
@@ -170,19 +182,23 @@ impl Grain {
         self.stereo_pos = rand::random::<f32>() * 2.0 - 1.0;
         self.init_gain = init_gain;
         self.sample_rate = sample_rate;
+        self.buffer_length_sec = buffer_length_sec;
     }
 
-    fn update(&mut self, pitch: i32) {
+    fn update(&mut self, pitch: i32, gain: f32) {
         let pitch = (2.0f32).powf(pitch as f32 / 12.0);
-
-        let inc_oct = 1.0 / (self.sample_rate * 10.0);
-
-        let inc = inc_oct * (1.0 - pitch);
+        let inc = (1.0 - pitch) / (self.sample_rate * self.buffer_length_sec);
 
         self.pos += inc;
 
+        if self.pos < 0.0 {
+            self.pos = 1.0 + self.pos;
+        } else if self.pos > 1.0 {
+            self.pos = self.pos - 1.0;
+        }
+
         self.counter += 1;
-        self.gain = self.env.next_sample() as f32 * self.init_gain;
+        self.gain = self.env.next_sample() as f32 * self.init_gain * gain;
         if self.counter > self.length {
             self.active = false;
             self.counter = 0;

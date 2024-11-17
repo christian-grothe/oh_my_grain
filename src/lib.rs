@@ -6,7 +6,8 @@ use std::sync::Arc;
 mod editor;
 
 const PLAY_HEADS: usize = 2;
-const GRAIN_NUM: usize = 30;
+const BUFFER_SIZE_SEC: f32 = 5.0;
+const GRAIN_NUM: usize = 128;
 
 pub struct GranularDelay {
     params: Arc<GranularDelayParams>,
@@ -28,6 +29,8 @@ struct GranularDelayParams {
     pub grain_size_a: FloatParam,
     #[id = "pitchA"]
     pub pitch_a: IntParam,
+    #[id = "gainA"]
+    pub gain_a: FloatParam,
 
     #[id = "densB"]
     pub density_b: FloatParam,
@@ -39,6 +42,8 @@ struct GranularDelayParams {
     pub grain_size_b: FloatParam,
     #[id = "pitchB"]
     pub pitch_b: IntParam,
+    #[id = "GainB"]
+    pub gain_b: FloatParam,
 
     #[id = "feedback"]
     pub feedback: FloatParam,
@@ -97,6 +102,14 @@ impl Default for GranularDelayParams {
             )
             .with_unit(" %")
             .with_value_to_string(formatters::v2s_f32_percentage(0)),
+            
+            gain_a: FloatParam::new(
+                "GainA",
+                1.0,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
             density_b: FloatParam::new(
                 "Density B",
@@ -127,6 +140,14 @@ impl Default for GranularDelayParams {
             grain_size_b: FloatParam::new(
                 "Grain Size B",
                 0.5,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+            
+            gain_b: FloatParam::new(
+                "GainB",
+                1.0,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
             )
             .with_unit(" %")
@@ -211,7 +232,7 @@ impl Plugin for GranularDelay {
         buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        self.delay.init(10.0, buffer_config.sample_rate);
+        self.delay.init(BUFFER_SIZE_SEC, buffer_config.sample_rate);
         true
     }
 
@@ -245,6 +266,9 @@ impl Plugin for GranularDelay {
 
         self.delay.set_pitch(0,self.params.pitch_a.smoothed.next());
         self.delay.set_pitch(1,self.params.pitch_b.smoothed.next());
+
+        self.delay.set_gain(0,self.params.gain_a.smoothed.next());
+        self.delay.set_gain(1,self.params.gain_b.smoothed.next());
 
 
         for channels in buffer.iter_samples() {
