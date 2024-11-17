@@ -4,16 +4,23 @@ fn lerp(v0: f32, v1: f32, t: f32) -> f32 {
     (1.0 - t) * v0 + t * v1
 }
 
-#[allow(dead_code)]
+#[derive(PartialEq)]
+pub enum FeedbackSrc {
+    Playhead,
+    Grain,
+}
+
 pub struct PlayHead {
     sample_rate: f32,
     pub distance: f32,         // distance from record_head range 0-1
     pub current_distance: f32, // current distance interpolates to distance
-    pub window_size: f32,      // window_size range between 0-1 
-    grain_size: f32,          
-    trig: Trig,                // triggers grains
+    pub window_size: f32,      // window_size range between 0-1
+    grain_size: f32,
+    trig: Trig, // triggers grains
     pub grains: Vec<Grain>,
     grain_num: usize,
+    pub feedback_src: FeedbackSrc,
+    pitch: i32,
 }
 
 impl PlayHead {
@@ -33,7 +40,18 @@ impl PlayHead {
                 }
                 grains
             },
+            feedback_src: FeedbackSrc::Playhead,
+            pitch: 0,
         }
+    }
+
+    #[allow(dead_code)]
+    pub fn set_feedback_src(&mut self, feedback_src: FeedbackSrc) {
+        self.feedback_src = feedback_src;
+    }
+
+    pub fn set_pitch(&mut self, pitch: i32) {
+        self.pitch = pitch;
     }
 
     pub fn set_window_size(&mut self, window_size: f32) {
@@ -80,7 +98,7 @@ impl PlayHead {
         }
         for grain in self.grains.iter_mut() {
             if grain.active {
-                grain.update();
+                grain.update(self.pitch);
             }
         }
     }
@@ -106,6 +124,7 @@ impl PlayHead {
                     init_gain,
                     self.window_size,
                     self.current_distance,
+                    self.sample_rate,
                 );
                 break;
             }
@@ -119,6 +138,7 @@ pub struct Grain {
     pub active: bool,
     pub pos: f32, // position in window -1 to 1
     pub stereo_pos: f32,
+    sample_rate: f32,
     length: usize,
     counter: usize,
     pub gain: f32,
@@ -127,7 +147,15 @@ pub struct Grain {
 }
 
 impl Grain {
-    fn activate(&mut self, pos: f32, length: usize, init_gain: f32, window_size: f32, dist: f32) {
+    fn activate(
+        &mut self,
+        pos: f32,
+        length: usize,
+        init_gain: f32,
+        window_size: f32,
+        dist: f32,
+        sample_rate: f32,
+    ) {
         self.pos = window_size * 0.5 / 2.0 * pos + dist;
 
         if self.pos < 0.0 {
@@ -141,9 +169,18 @@ impl Grain {
         self.env.set_inc(1.0 / length as f64);
         self.stereo_pos = rand::random::<f32>() * 2.0 - 1.0;
         self.init_gain = init_gain;
+        self.sample_rate = sample_rate;
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, pitch: i32) {
+        let pitch = (2.0f32).powf(pitch as f32 / 12.0);
+
+        let inc_oct = 1.0 / (self.sample_rate * 10.0);
+
+        let inc = inc_oct * (1.0 - pitch);
+
+        self.pos += inc;
+
         self.counter += 1;
         self.gain = self.env.next_sample() as f32 * self.init_gain;
         if self.counter > self.length {

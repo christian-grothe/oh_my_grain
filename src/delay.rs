@@ -31,6 +31,40 @@ pub struct Buffer {
     pub write_head: usize,
 }
 
+impl Buffer {
+    fn get_cubic_sample(&self, pos: f32) -> (f32, f32) {
+        // Circular buffer size
+        let len = self.data.len();
+
+        // Integer index of the base sample
+        let base = pos.floor() as usize;
+
+        // Fractional part of the position
+        let t = pos - pos.floor();
+
+        // Fetch the four samples (wrapping around the circular buffer)
+        let p0 = self.data[(base.wrapping_sub(1)) % len];
+        let p1 = self.data[base % len];
+        let p2 = self.data[(base + 1) % len];
+        let p3 = self.data[(base + 2) % len];
+
+        // Perform cubic interpolation
+        let left = p1.0
+            + 0.5
+                * t
+                * (p2.0 - p0.0
+                    + t * (2.0 * p0.0 - 5.0 * p1.0 + 4.0 * p2.0 - p3.0
+                        + t * (3.0 * (p1.0 - p2.0) + p3.0 - p0.0)));
+        let right = p1.1
+            + 0.5
+                * t
+                * (p2.1 - p0.1
+                    + t * (2.0 * p0.1 - 5.0 * p1.1 + 4.0 * p2.1 - p3.1
+                        + t * (3.0 * (p1.1 - p2.1) + p3.1 - p0.1)));
+        (left, right)
+    }
+}
+
 #[derive(Debug)]
 pub struct Graindata {
     pub pos: f32,
@@ -88,6 +122,10 @@ impl Delay {
         });
     }
 
+    pub fn set_pitch(&mut self,index:usize, value: i32) {
+        self.play_heads[index].set_pitch(value);
+    }
+
     pub fn set_distance(&mut self, index: usize, value: f32) {
         self.play_heads[index].set_distance(value);
     }
@@ -115,8 +153,6 @@ impl Delay {
     pub fn set_wet(&mut self, value: f32) {
         self.wet = value;
     }
-
-
 
     pub fn get_draw_data(&mut self) {
         self.draw_data_update_count += 1;
@@ -162,18 +198,20 @@ impl Delay {
             play_head.update();
 
             let buffer = self.buffer.read().unwrap();
-
             let buffer_size = buffer.data.len() as f32;
-            let offset = buffer_size * play_head.current_distance;
 
-            let mut feedback_pos = buffer.write_head as f32 - offset;
+            if play_head.feedback_src == playhead::FeedbackSrc::Playhead {
+                let offset = buffer_size * play_head.current_distance;
 
-            if feedback_pos < 0.0 {
-                feedback_pos += buffer_size;
+                let mut feedback_pos = buffer.write_head as f32 - offset;
+
+                if feedback_pos < 0.0 {
+                    feedback_pos += buffer_size;
+                }
+
+                feedback.0 += buffer.data[feedback_pos as usize % buffer.data.len()].0;
+                feedback.1 += buffer.data[feedback_pos as usize % buffer.data.len()].1;
             }
-
-            feedback.0 += buffer.data[feedback_pos as usize % buffer.data.len()].0;
-            feedback.1 += buffer.data[feedback_pos as usize % buffer.data.len()].1;
 
             let grain_data = play_head.get_grain_data();
 
@@ -186,13 +224,23 @@ impl Delay {
                     read_pos += buffer_size;
                 }
 
-                let index = read_pos as usize % buffer.data.len();
+                //let index = read_pos as usize % buffer.data.len();
 
                 let left_gain = 0.5 * (1.0 - stereo_pos);
                 let right_gain = 0.5 * (1.0 + stereo_pos);
 
-                out.0 += buffer.data[index].clone().0 * *gain * left_gain;
-                out.1 += buffer.data[index].clone().1 * *gain * right_gain;
+                let (left_sample, right_sample) = buffer.get_cubic_sample(read_pos);
+
+                // let left_sample = buffer.data[index].clone().0 * *gain * left_gain;
+                // let right_sample = buffer.data[index].clone().1 * *gain * right_gain;
+
+                if play_head.feedback_src == playhead::FeedbackSrc::Grain {
+                    feedback.0 += left_sample;
+                    feedback.1 += right_sample;
+                }
+
+                out.0 += left_sample * *gain * left_gain;
+                out.1 += right_sample * *gain * right_gain;
             });
         }
 

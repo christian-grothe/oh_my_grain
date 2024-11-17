@@ -21,7 +21,7 @@ struct Data {
 impl Model for Data {}
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (600, 450))
+    ViziaState::new(|| (700, 750))
 }
 
 pub(crate) fn create(
@@ -112,6 +112,10 @@ fn controlls(cx: &mut Context) {
             ParamSlider::new(cx, Data::params, |params| &params.density_a)
                 .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
+            Label::new(cx, "Pitch");
+            ParamSlider::new(cx, Data::params, |params| &params.pitch_a)
+                .bottom(Pixels(10.0))
+                .set_style(ParamSliderStyle::FromLeft);
         })
         .height(Auto);
 
@@ -141,6 +145,10 @@ fn controlls(cx: &mut Context) {
                 .set_style(ParamSliderStyle::FromLeft);
             Label::new(cx, "Density");
             ParamSlider::new(cx, Data::params, |params| &params.density_b)
+                .bottom(Pixels(10.0))
+                .set_style(ParamSliderStyle::FromLeft);
+            Label::new(cx, "Pitch");
+            ParamSlider::new(cx, Data::params, |params| &params.pitch_b)
                 .bottom(Pixels(10.0))
                 .set_style(ParamSliderStyle::FromLeft);
         })

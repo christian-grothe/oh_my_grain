@@ -26,6 +26,8 @@ struct GranularDelayParams {
     pub window_size_a: FloatParam,
     #[id = "grainSizeA"]
     pub grain_size_a: FloatParam,
+    #[id = "pitchA"]
+    pub pitch_a: IntParam,
 
     #[id = "densB"]
     pub density_b: FloatParam,
@@ -35,6 +37,8 @@ struct GranularDelayParams {
     pub window_size_b: FloatParam,
     #[id = "grainSizeB"]
     pub grain_size_b: FloatParam,
+    #[id = "pitchB"]
+    pub pitch_b: IntParam,
 
     #[id = "feedback"]
     pub feedback: FloatParam,
@@ -142,6 +146,11 @@ impl Default for GranularDelayParams {
             wet: FloatParam::new("Wet", 0.85, FloatRange::Linear { min: 0.0, max: 1.0 })
                 .with_unit(" %")
                 .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            pitch_a: IntParam::new("Pitch A", 0, IntRange::Linear { min: -12, max: 12 })
+                .with_unit(" st"),
+            pitch_b: IntParam::new("Pitch B", 0, IntRange::Linear { min: -12, max: 12 })
+                .with_unit(" st"),
         }
     }
 }
@@ -233,6 +242,10 @@ impl Plugin for GranularDelay {
             .set_grain_size(1, self.params.grain_size_b.smoothed.next());
         self.delay.set_dry(self.params.dry.smoothed.next());
         self.delay.set_wet(self.params.wet.smoothed.next());
+
+        self.delay.set_pitch(0,self.params.pitch_a.smoothed.next());
+        self.delay.set_pitch(1,self.params.pitch_b.smoothed.next());
+
 
         for channels in buffer.iter_samples() {
             let mut sample_channels = channels.into_iter();
