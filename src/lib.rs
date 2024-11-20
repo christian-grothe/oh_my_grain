@@ -243,7 +243,7 @@ impl Plugin for GranularDelay {
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         self.delay.feedback = self.params.feedback.smoothed.next();
-        self.delay.set_alpha(self.params.color.smoothed.next());
+        self.delay.set_cutoff(self.params.color.smoothed.next());
 
         self.delay
             .set_distance(0, self.params.distance_a.smoothed.next());

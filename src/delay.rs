@@ -1,30 +1,8 @@
 use std::sync::{Arc, RwLock};
 
 mod envelope;
+mod filter;
 mod playhead;
-
-#[allow(dead_code)]
-struct OnePole {
-    alpha: f32,
-    z1_l: f32,
-    z1_r: f32,
-}
-
-#[allow(dead_code)]
-impl OnePole {
-    fn new() -> Self {
-        Self {
-            alpha: 0.5,
-            z1_l: 0.0,
-            z1_r: 0.0,
-        }
-    }
-    fn next(&mut self, input: (f32, f32)) -> (f32, f32) {
-        self.z1_l = self.z1_l + self.alpha * (input.0 - self.z1_l);
-        self.z1_r = self.z1_r + self.alpha * (input.1 - self.z1_r);
-        (self.z1_l, self.z1_r)
-    }
-}
 
 pub struct Buffer {
     pub data: Vec<(f32, f32)>,
@@ -74,7 +52,7 @@ pub struct Delay {
     pub sample_rate: f32,
     play_heads: Vec<playhead::PlayHead>,
     pub feedback: f32,
-    filter: OnePole,
+    filter: filter::StereoBiquadLowPass,
     feedback_sample: (f32, f32),
     dry: f32,
     wet: f32,
@@ -98,7 +76,7 @@ impl Delay {
             play_heads: (0..play_heads)
                 .map(|_| playhead::PlayHead::new(0.5, grain_num))
                 .collect(),
-            filter: OnePole::new(),
+            filter: filter::StereoBiquadLowPass::new(5000.0, 48_000.0, 0.707),
             feedback_sample: (0.0, 0.0),
             dry: 1.0,
             wet: 1.0,
@@ -110,6 +88,7 @@ impl Delay {
         let buffer_length = (buffer_length_sec * sample_rate) as usize;
 
         buffer.data.resize(buffer_length, (0.0, 0.0));
+        self.filter.update_sample_rate(sample_rate);
 
         self.sample_rate = sample_rate;
         self.play_heads.iter_mut().for_each(|play_head| {
@@ -141,8 +120,9 @@ impl Delay {
         self.play_heads[index].set_grain_size(value);
     }
 
-    pub fn set_alpha(&mut self, value: f32) {
-        self.filter.alpha = value;
+    pub fn set_cutoff(&mut self, value: f32) {
+        let cutoff = value * 10_000.0 + 100.0;
+        self.filter.update_coefficients(cutoff);
     }
 
     pub fn set_dry(&mut self, value: f32) {
@@ -180,7 +160,7 @@ impl Delay {
             self.feedback_sample.1 * self.feedback * 0.5,
         );
 
-        let feedback = self.filter.next(feedback);
+        let feedback = self.filter.process(feedback);
         let mut buffer = self.buffer.write().unwrap();
         let write_head = buffer.write_head;
 
