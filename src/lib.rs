@@ -14,35 +14,77 @@ pub struct GranularDelay {
 }
 
 #[derive(Params)]
+struct PlayheadParams {
+    #[id = "dens"]
+    pub density: FloatParam,
+    #[id = "distance"]
+    pub distance: FloatParam,
+    #[id = "windowSize"]
+    pub window_size: FloatParam,
+    #[id = "grainSize"]
+    pub grain_size: FloatParam,
+    #[id = "pitch"]
+    pub pitch: IntParam,
+    #[id = "gain"]
+    pub gain: FloatParam,
+}
+
+impl PlayheadParams {
+    fn new(distance: f32) -> Self {
+        PlayheadParams {
+            density: FloatParam::new(
+                "Density",
+                1.0,
+                FloatRange::Linear {
+                    min: 0.125,
+                    max: 50.0,
+                },
+            )
+            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
+
+            distance: FloatParam::new(
+                "Distance",
+                distance,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            window_size: FloatParam::new(
+                "Window Size",
+                0.25,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            grain_size: FloatParam::new(
+                "Grain Size",
+                0.5,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            gain: FloatParam::new("Gain", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit(" %")
+                .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            pitch: IntParam::new("Pitch", 0, IntRange::Linear { min: -12, max: 12 })
+                .with_unit(" st"),
+        }
+    }
+}
+
+#[derive(Params)]
 struct GranularDelayParams {
     #[persist = "editor-state"]
     editor_state: Arc<ViziaState>,
 
-    #[id = "densA"]
-    pub density_a: FloatParam,
-    #[id = "distanceA"]
-    pub distance_a: FloatParam,
-    #[id = "windowSizeA"]
-    pub window_size_a: FloatParam,
-    #[id = "grainSizeA"]
-    pub grain_size_a: FloatParam,
-    #[id = "pitchA"]
-    pub pitch_a: IntParam,
-    #[id = "gainA"]
-    pub gain_a: FloatParam,
-
-    #[id = "densB"]
-    pub density_b: FloatParam,
-    #[id = "distanceB"]
-    pub distance_b: FloatParam,
-    #[id = "windowSizeB"]
-    pub window_size_b: FloatParam,
-    #[id = "grainSizeB"]
-    pub grain_size_b: FloatParam,
-    #[id = "pitchB"]
-    pub pitch_b: IntParam,
-    #[id = "GainB"]
-    pub gain_b: FloatParam,
+    #[nested(id_prefix = "a", group = "playheads")]
+    playhead_a: PlayheadParams,
+    #[nested(id_prefix = "b", group = "playheads")]
+    playhead_b: PlayheadParams,
 
     #[id = "feedback"]
     pub feedback: FloatParam,
@@ -70,81 +112,8 @@ impl Default for GranularDelayParams {
         Self {
             editor_state: editor::default_state(),
 
-            density_a: FloatParam::new(
-                "Density A",
-                1.0,
-                FloatRange::Linear {
-                    min: 0.125,
-                    max: 50.0,
-                },
-            )
-            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
-
-            distance_a: FloatParam::new(
-                "Distance A",
-                0.5,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            window_size_a: FloatParam::new(
-                "Window Size A",
-                0.5,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            grain_size_a: FloatParam::new(
-                "Grain Size A",
-                0.5,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            gain_a: FloatParam::new("GainA", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
-                .with_unit(" %")
-                .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            density_b: FloatParam::new(
-                "Density B",
-                1.0,
-                FloatRange::Linear {
-                    min: 0.125,
-                    max: 50.0,
-                },
-            )
-            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
-
-            distance_b: FloatParam::new(
-                "Distance B",
-                0.25,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            window_size_b: FloatParam::new(
-                "Window Size B",
-                0.5,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            grain_size_b: FloatParam::new(
-                "Grain Size B",
-                0.5,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            gain_b: FloatParam::new("GainB", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
-                .with_unit(" %")
-                .with_value_to_string(formatters::v2s_f32_percentage(0)),
+            playhead_a: PlayheadParams::new(0.25),
+            playhead_b: PlayheadParams::new(0.5),
 
             feedback: FloatParam::new("Feedback", 0.45, FloatRange::Linear { min: 0.0, max: 1.0 })
                 .with_unit(" %")
@@ -160,11 +129,6 @@ impl Default for GranularDelayParams {
             wet: FloatParam::new("Wet", 0.85, FloatRange::Linear { min: 0.0, max: 1.0 })
                 .with_unit(" %")
                 .with_value_to_string(formatters::v2s_f32_percentage(0)),
-
-            pitch_a: IntParam::new("Pitch A", 0, IntRange::Linear { min: -12, max: 12 })
-                .with_unit(" st"),
-            pitch_b: IntParam::new("Pitch B", 0, IntRange::Linear { min: -12, max: 12 })
-                .with_unit(" st"),
         }
     }
 }
@@ -238,29 +202,37 @@ impl Plugin for GranularDelay {
         self.delay.set_cutoff(self.params.color.smoothed.next());
 
         self.delay
-            .set_distance(0, self.params.distance_a.smoothed.next());
+            .set_distance(0, self.params.playhead_a.distance.smoothed.next());
         self.delay
-            .set_density(0, self.params.density_a.smoothed.next());
+            .set_density(0, self.params.playhead_a.density.smoothed.next());
         self.delay
-            .set_window_size(0, self.params.window_size_a.smoothed.next());
+            .set_window_size(0, self.params.playhead_a.window_size.smoothed.next());
         self.delay
-            .set_grain_size(0, self.params.grain_size_a.smoothed.next());
+            .set_grain_size(0, self.params.playhead_a.grain_size.smoothed.next());
         self.delay
-            .set_distance(1, self.params.distance_b.smoothed.next());
+            .set_pitch(0, self.params.playhead_a.pitch.smoothed.next());
         self.delay
-            .set_density(1, self.params.density_b.smoothed.next());
+            .set_gain(0, self.params.playhead_a.gain.smoothed.next());
+        self.delay.set_pitch(0, self.params.playhead_a.pitch.smoothed.next());
+        self.delay.set_gain(0, self.params.playhead_a.gain.smoothed.next());
+
         self.delay
-            .set_window_size(1, self.params.window_size_b.smoothed.next());
+            .set_distance(1, self.params.playhead_b.distance.smoothed.next());
         self.delay
-            .set_grain_size(1, self.params.grain_size_b.smoothed.next());
+            .set_density(1, self.params.playhead_b.density.smoothed.next());
+        self.delay
+            .set_window_size(1, self.params.playhead_b.window_size.smoothed.next());
+        self.delay
+            .set_grain_size(1, self.params.playhead_b.grain_size.smoothed.next());
+        self.delay
+            .set_pitch(1, self.params.playhead_b.pitch.smoothed.next());
+        self.delay
+            .set_gain(1, self.params.playhead_b.gain.smoothed.next());
+        self.delay.set_pitch(1, self.params.playhead_b.pitch.smoothed.next());
+        self.delay.set_gain(1, self.params.playhead_b.gain.smoothed.next());
+
         self.delay.set_dry(self.params.dry.smoothed.next());
         self.delay.set_wet(self.params.wet.smoothed.next());
-
-        self.delay.set_pitch(0, self.params.pitch_a.smoothed.next());
-        self.delay.set_pitch(1, self.params.pitch_b.smoothed.next());
-
-        self.delay.set_gain(0, self.params.gain_a.smoothed.next());
-        self.delay.set_gain(1, self.params.gain_b.smoothed.next());
 
         for channels in buffer.iter_samples() {
             let mut sample_channels = channels.into_iter();

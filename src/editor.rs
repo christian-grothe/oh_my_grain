@@ -57,8 +57,8 @@ fn waveform(cx: &mut Context, draw_data: Arc<Mutex<Output<DrawData>>>) {
             cx,
             draw_data,
             Data::params,
-            |params| &params.distance_a,
-            |params| &params.distance_b,
+            |params| &params.playhead_a.distance,
+            |params| &params.playhead_b.distance,
         );
     })
     .min_top(Pixels(30.0))
@@ -85,81 +85,79 @@ fn top_bar(cx: &mut Context) {
 
 fn controlls(cx: &mut Context) {
     HStack::new(cx, |cx| {
-        VStack::new(cx, |cx| {
-            Label::new(cx, "Playhead A")
-                .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
-                .font_weight(FontWeightKeyword::Medium)
-                .font_size(15.0)
-                .height(Pixels(20.0))
-                .child_top(Stretch(1.0))
-                .child_bottom(Pixels(0.0))
-                .color(Color::rgb(RED.0, RED.1, RED.2));
+            VStack::new(cx, |cx| {
+                Label::new(cx, "Playhead A")
+                    .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
+                    .font_weight(FontWeightKeyword::Medium)
+                    .font_size(15.0)
+                    .height(Pixels(20.0))
+                    .child_top(Stretch(1.0))
+                    .child_bottom(Pixels(0.0))
+                    .color(Color::rgb(RED.0, RED.1, RED.2));
 
-            Label::new(cx, "Distance");
-            ParamSlider::new(cx, Data::params, |params| &params.distance_a)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Window Size");
-            ParamSlider::new(cx, Data::params, |params| &params.window_size_a)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Grain Length");
-            ParamSlider::new(cx, Data::params, |params| &params.grain_size_a)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Density");
-            ParamSlider::new(cx, Data::params, |params| &params.density_a)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Pitch");
-            ParamSlider::new(cx, Data::params, |params| &params.pitch_a)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Gain");
-            ParamSlider::new(cx, Data::params, |params| &params.gain_a)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-        })
-        .height(Auto);
+                Label::new(cx, "Distance");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_a.distance)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Window Size");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_a.window_size)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Grain Length");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_a.grain_size)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Density");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_a.density)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Pitch");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_a.pitch)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Gain");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_a.gain)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+            })
+            .height(Auto);
 
-        VStack::new(cx, |cx| {
-            Label::new(cx, "Playhead B")
-                .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
-                .font_weight(FontWeightKeyword::Medium)
-                .font_size(15.0)
-                .height(Pixels(20.0))
-                .child_top(Stretch(1.0))
-                .child_bottom(Pixels(0.0))
-                .color(Color::rgb(GREEN.0, GREEN.1, GREEN.2));
+            VStack::new(cx, |cx| {
+                Label::new(cx, "Playhead B")
+                    .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
+                    .font_weight(FontWeightKeyword::Medium)
+                    .font_size(15.0)
+                    .height(Pixels(20.0))
+                    .child_top(Stretch(1.0))
+                    .child_bottom(Pixels(0.0))
+                    .color(Color::rgb(GREEN.0, GREEN.1, GREEN.2));
 
-            Label::new(cx, "Distance");
-            ParamSlider::new(cx, Data::params, |params| &params.distance_b)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-               
-
-            Label::new(cx, "Window Size");
-            ParamSlider::new(cx, Data::params, |params| &params.window_size_b)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Grain Length");
-            ParamSlider::new(cx, Data::params, |params| &params.grain_size_b)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Density");
-            ParamSlider::new(cx, Data::params, |params| &params.density_b)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Pitch");
-            ParamSlider::new(cx, Data::params, |params| &params.pitch_b)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-            Label::new(cx, "Gain");
-            ParamSlider::new(cx, Data::params, |params| &params.gain_b)
-                .bottom(Pixels(10.0))
-                .set_style(ParamSliderStyle::FromLeft);
-        })
-        .height(Auto);
+                Label::new(cx, "Distance");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_b.distance)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Window Size");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_b.window_size)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Grain Length");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_b.grain_size)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Density");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_b.density)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Pitch");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_b.pitch)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Gain");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_b.gain)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+            })
+            .height(Auto);
 
         VStack::new(cx, |cx| {
             Label::new(cx, "Main")

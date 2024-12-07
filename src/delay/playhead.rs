@@ -135,6 +135,8 @@ impl PlayHead {
                     self.distance,
                     self.sample_rate,
                     self.buffer_length_sec,
+                    self.pitch,
+                    self.grain_size,
                 );
                 break;
             }
@@ -167,6 +169,8 @@ impl Grain {
         playhead_distance: f32,
         sample_rate: f32,
         buffer_length_sec: f32,
+        pitch: i32,
+        rel_length: f32,
     ) {
         self.pos = window_size * 0.25 * pos + playhead_distance;
 
@@ -183,6 +187,30 @@ impl Grain {
         self.init_gain = init_gain;
         self.sample_rate = sample_rate;
         self.buffer_length_sec = buffer_length_sec;
+
+        let rel_length = rel_length / 5.0;
+        let pitch = (2.0f32).powf(pitch as f32 / 12.0);
+
+        if pitch > 0.0 && rel_length * (pitch - 1.0) > self.pos {
+            let factor = 1.0 - self.pos - rel_length;
+            self.length = (factor * self.length as f32) as usize;
+            self.env.set_inc(1.0 / self.length as f64);
+            nih_plug::nih_log!("{}",self.length);
+        }
+
+
+        // if pitch * length > pos && pitch > 0
+        // length = pos
+        //
+        // if pitch.abs * length + pos > 1 && pitch < 0
+        // length = (1 - pos) / pitch.abs
+
+        // nih_plug::nih_log!(
+        //     "pos: {}, pitch: {}, length: {}",
+        //     self.pos,
+        //     pitch - 1.0,
+        //     rel_length,
+        // );
     }
 
     fn update(&mut self, pitch: i32, gain: f32) {
