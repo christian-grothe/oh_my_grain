@@ -198,9 +198,6 @@ impl Plugin for GranularDelay {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
-        self.delay.feedback = self.params.feedback.smoothed.next();
-        self.delay.set_cutoff(self.params.color.smoothed.next());
-
         self.delay
             .set_distance(0, self.params.playhead_a.distance.smoothed.next());
         self.delay
@@ -213,8 +210,10 @@ impl Plugin for GranularDelay {
             .set_pitch(0, self.params.playhead_a.pitch.smoothed.next());
         self.delay
             .set_gain(0, self.params.playhead_a.gain.smoothed.next());
-        self.delay.set_pitch(0, self.params.playhead_a.pitch.smoothed.next());
-        self.delay.set_gain(0, self.params.playhead_a.gain.smoothed.next());
+        self.delay
+            .set_pitch(0, self.params.playhead_a.pitch.smoothed.next());
+        self.delay
+            .set_gain(0, self.params.playhead_a.gain.smoothed.next());
 
         self.delay
             .set_distance(1, self.params.playhead_b.distance.smoothed.next());
@@ -228,11 +227,15 @@ impl Plugin for GranularDelay {
             .set_pitch(1, self.params.playhead_b.pitch.smoothed.next());
         self.delay
             .set_gain(1, self.params.playhead_b.gain.smoothed.next());
-        self.delay.set_pitch(1, self.params.playhead_b.pitch.smoothed.next());
-        self.delay.set_gain(1, self.params.playhead_b.gain.smoothed.next());
+        self.delay
+            .set_pitch(1, self.params.playhead_b.pitch.smoothed.next());
+        self.delay
+            .set_gain(1, self.params.playhead_b.gain.smoothed.next());
 
         self.delay.set_dry(self.params.dry.smoothed.next());
         self.delay.set_wet(self.params.wet.smoothed.next());
+        self.delay.feedback = self.params.feedback.smoothed.next();
+        self.delay.set_cutoff(self.params.color.smoothed.next());
 
         for channels in buffer.iter_samples() {
             let mut sample_channels = channels.into_iter();
