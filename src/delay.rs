@@ -7,7 +7,7 @@ mod playhead;
 const BUFFER_SIZE_SEC: f32 = 5.0;
 const GRAIN_NUM: usize = 128;
 const PLAY_HEADS: usize = 2;
-const BAR_NUM: usize = 10;
+const BAR_NUM: usize = 100;
 
 #[derive(Clone)]
 pub struct DrawData {
@@ -78,6 +78,7 @@ struct DrawBuffer {
     sample_count: usize,
     samples_per_bar: usize,
     current_index: usize,
+    data: Vec<f32>,
 }
 
 pub struct Delay {
@@ -126,6 +127,7 @@ impl Delay {
         });
 
         self.draw_buffer.samples_per_bar = buffer_length / BAR_NUM;
+        self.draw_buffer.data = vec![0.0; BAR_NUM];
     }
 
     pub fn set_gain(&mut self, index: usize, value: f32) {
@@ -186,26 +188,26 @@ impl Delay {
         self.draw_buffer.sample_count += 1;
         self.draw_buffer.sample_sum += sample.abs();
         if self.draw_buffer.sample_count >= self.draw_buffer.samples_per_bar {
-            //let mut new_bar = self.draw_buffer.sample_sum / self.draw_buffer.samples_per_bar as f32;
-            let mut new_bar = rand::random::<f32>();
+            let mut new_bar = self.draw_buffer.sample_sum / self.draw_buffer.samples_per_bar as f32;
 
             if new_bar > 1.0 {
                 new_bar = 1.0
             }
 
-            draw_data.buffer[self.draw_buffer.current_index] = new_bar;
+            self.draw_buffer.data.remove(0);
+            self.draw_buffer.data.push(new_bar);
+            draw_data.buffer = self.draw_buffer.data.clone();
+
             self.draw_buffer.current_index = self.draw_buffer.current_index + 1;
+
             if self.draw_buffer.current_index >= draw_data.buffer.len() {
                 self.draw_buffer.current_index = 0;
             }
 
             self.draw_buffer.sample_sum = 0.0;
             self.draw_buffer.sample_count = 0;
-
-            nih_plug::nih_log!("{:?}", draw_data.buffer);
+            self.draw_data.publish();
         }
-
-        self.draw_data.publish();
     }
 
     fn write(&mut self, signal: (&f32, &f32)) {
