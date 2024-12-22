@@ -1,17 +1,16 @@
 mod delay;
+use delay::DrawData;
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use triple_buffer::{triple_buffer, Output};
 
 mod editor;
-
-const PLAY_HEADS: usize = 2;
-const BUFFER_SIZE_SEC: f32 = 5.0;
-const GRAIN_NUM: usize = 128;
 
 pub struct GranularDelay {
     params: Arc<GranularDelayParams>,
     delay: delay::Delay,
+    buf_output: Arc<Mutex<Output<DrawData>>>,
 }
 
 #[derive(Params)]
@@ -57,9 +56,11 @@ struct GranularDelayParams {
 
 impl Default for GranularDelay {
     fn default() -> Self {
+        let (buf_input, buf_output) = triple_buffer(&DrawData::new());
         Self {
             params: Arc::new(GranularDelayParams::default()),
-            delay: delay::Delay::new(PLAY_HEADS, GRAIN_NUM),
+            delay: delay::Delay::new(buf_input),
+            buf_output: Arc::new(Mutex::new(buf_output)),
         }
     }
 }
@@ -102,14 +103,10 @@ impl Default for GranularDelayParams {
             )
             .with_unit(" %")
             .with_value_to_string(formatters::v2s_f32_percentage(0)),
-            
-            gain_a: FloatParam::new(
-                "GainA",
-                1.0,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            gain_a: FloatParam::new("GainA", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit(" %")
+                .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
             density_b: FloatParam::new(
                 "Density B",
@@ -144,14 +141,10 @@ impl Default for GranularDelayParams {
             )
             .with_unit(" %")
             .with_value_to_string(formatters::v2s_f32_percentage(0)),
-            
-            gain_b: FloatParam::new(
-                "GainB",
-                1.0,
-                FloatRange::Linear { min: 0.0, max: 1.0 },
-            )
-            .with_unit(" %")
-            .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            gain_b: FloatParam::new("GainB", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit(" %")
+                .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
             feedback: FloatParam::new("Feedback", 0.45, FloatRange::Linear { min: 0.0, max: 1.0 })
                 .with_unit(" %")
@@ -221,8 +214,7 @@ impl Plugin for GranularDelay {
         editor::create(
             self.params.clone(),
             self.params.editor_state.clone(),
-            self.delay.buffer.clone(),
-            self.delay.draw_data.clone(),
+            self.buf_output.clone(),
         )
     }
 
@@ -232,7 +224,7 @@ impl Plugin for GranularDelay {
         buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        self.delay.init(BUFFER_SIZE_SEC, buffer_config.sample_rate);
+        self.delay.init(buffer_config.sample_rate);
         true
     }
 
@@ -264,12 +256,11 @@ impl Plugin for GranularDelay {
         self.delay.set_dry(self.params.dry.smoothed.next());
         self.delay.set_wet(self.params.wet.smoothed.next());
 
-        self.delay.set_pitch(0,self.params.pitch_a.smoothed.next());
-        self.delay.set_pitch(1,self.params.pitch_b.smoothed.next());
+        self.delay.set_pitch(0, self.params.pitch_a.smoothed.next());
+        self.delay.set_pitch(1, self.params.pitch_b.smoothed.next());
 
-        self.delay.set_gain(0,self.params.gain_a.smoothed.next());
-        self.delay.set_gain(1,self.params.gain_b.smoothed.next());
-
+        self.delay.set_gain(0, self.params.gain_a.smoothed.next());
+        self.delay.set_gain(1, self.params.gain_b.smoothed.next());
 
         for channels in buffer.iter_samples() {
             let mut sample_channels = channels.into_iter();

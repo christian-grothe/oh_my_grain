@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
 use nih_plug::params::Param;
 use nih_plug_vizia::{
@@ -10,8 +10,9 @@ use nih_plug_vizia::{
     },
     widgets::param_base::ParamWidgetBase,
 };
+use triple_buffer::Output;
 
-use crate::delay::{Buffer, Graindata};
+use crate::delay::DrawData;
 
 const RED: (u8, u8, u8) = (201, 104, 104);
 const GREEN: (u8, u8, u8) = (165, 182, 141);
@@ -19,15 +20,13 @@ const GREEN: (u8, u8, u8) = (165, 182, 141);
 pub struct Waveform {
     dist_a_param: ParamWidgetBase,
     dist_b_param: ParamWidgetBase,
-    buffer: Arc<RwLock<Buffer>>,
-    draw_data: Arc<RwLock<Vec<Graindata>>>,
+    draw_data: Arc<Mutex<Output<DrawData>>>,
 }
 
 impl Waveform {
     pub fn new<L, Params, P, AMap, BMap>(
         cx: &mut Context,
-        buffer: Arc<RwLock<Buffer>>,
-        draw_data: Arc<RwLock<Vec<Graindata>>>,
+        draw_data: Arc<Mutex<Output<DrawData>>>,
         params: L,
         params_to_param_dist_a: AMap,
         params_to_param_dist_b: BMap,
@@ -42,7 +41,6 @@ impl Waveform {
         Self {
             dist_a_param: ParamWidgetBase::new(cx, params, params_to_param_dist_a),
             dist_b_param: ParamWidgetBase::new(cx, params, params_to_param_dist_b),
-            buffer,
             draw_data,
         }
         .build(cx, |_cx| ())
@@ -58,68 +56,52 @@ impl View for Waveform {
         if bounds.w == 0.0 || bounds.h == 0.0 {
             return;
         }
+        let mut data = self.draw_data.lock().unwrap();
+        let draw_data = data.read();
+        let buffer = draw_data.buffer.clone();
+        let grains = draw_data.grains.clone();
 
+        // Waveform
         let paint = Paint::color(Color::rgb(200, 200, 200));
         let mut path = Path::new();
-        let buffer = self.buffer.read().unwrap();
 
-        let chunks = buffer.data.len() / 128;
-
-        let buffer_to_draw: Vec<(f32, f32)> = buffer.data[buffer.write_head..]
-            .iter()
-            .chain(buffer.data[..buffer.write_head].iter())
-            .collect::<Vec<&(f32, f32)>>()
-            .chunks(chunks)
-            .map(|chunk| {
-                chunk
-                    .iter()
-                    .fold((0.0, 0.0), |acc, (x, y)| (acc.0 + x.abs(), acc.1 + y.abs()))
-            })
-            .collect();
-
-        for (i, (l, r)) in buffer_to_draw.iter().enumerate() {
-            let mut bar_height = (*l + *r) / chunks as f32;
-
-            if bar_height > 1.0 {
-                bar_height = 1.0;
-            }
-
+        for (i, sample) in buffer.iter().enumerate() {
             path.rect(
-                bounds.x + bounds.w * i as f32 / buffer_to_draw.len() as f32,
-                (bounds.y + bounds.h / 2.0) - (bounds.h * bar_height / 2.0),
+                bounds.x + bounds.w * i as f32 / buffer.len() as f32,
+                (bounds.y + bounds.h / 2.0) - (bounds.h * sample / 2.0),
                 2.0,
-                bounds.h * bar_height,
+                bounds.h * sample,
             );
         }
-
         canvas.fill_path(&path, &paint);
 
-        let mut path = Path::new();
+        // Playhead A
         let paint = Paint::color(Color::rgb(RED.0, RED.1, RED.2));
+        let mut path = Path::new();
+
         path.rect(
             bounds.x + bounds.w * (1.0 - self.dist_a_param.unmodulated_normalized_value()) - 2.5,
             bounds.y,
             5.0,
             bounds.h,
         );
-
         canvas.fill_path(&path, &paint);
 
-        let mut path = Path::new();
+        // Playhead B
         let paint = Paint::color(Color::rgb(GREEN.0, GREEN.1, GREEN.2));
+        let mut path = Path::new();
+
         path.rect(
             bounds.x + bounds.w * (1.0 - self.dist_b_param.unmodulated_normalized_value()) - 2.5,
             bounds.y,
             5.0,
             bounds.h,
         );
-
         canvas.fill_path(&path, &paint);
 
-        let draw_data = self.draw_data.read().unwrap();
+        // Grains
         let paint = Paint::color(Color::hex("#F6EABE"));
-
-        draw_data.iter().for_each(|data| {
+        grains.iter().for_each(|data| {
             let mut path = Path::new();
             let y = (data.stereo_pos + 1.0) / 2.0;
             path.arc(

@@ -3,10 +3,11 @@ use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::prelude::*;
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
-use std::sync::{Arc, RwLock};
+use triple_buffer::Output;
+use std::sync::{Arc, Mutex};
 use waveform::Waveform;
 
-use crate::delay::{Buffer, Graindata};
+use crate::delay::DrawData;
 use crate::GranularDelayParams;
 mod waveform;
 
@@ -27,8 +28,7 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 pub(crate) fn create(
     params: Arc<GranularDelayParams>,
     editor_state: Arc<ViziaState>,
-    buffer: Arc<RwLock<Buffer>>,
-    draw_data: Arc<RwLock<Vec<Graindata>>>,
+    draw_data: Arc<Mutex<Output<DrawData>>>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
         assets::register_noto_sans_light(cx);
@@ -46,16 +46,15 @@ pub(crate) fn create(
         VStack::new(cx, |cx| {
             top_bar(cx);
             controlls(cx);
-            waveform(cx, buffer.clone(), draw_data.clone());
+            waveform(cx, draw_data.clone());
         });
     })
 }
 
-fn waveform(cx: &mut Context, buffer: Arc<RwLock<Buffer>>, draw_data: Arc<RwLock<Vec<Graindata>>>) {
+fn waveform(cx: &mut Context, draw_data: Arc<Mutex<Output<DrawData>>>) {
     HStack::new(cx, |cx| {
         Waveform::new(
             cx,
-            buffer,
             draw_data,
             Data::params,
             |params| &params.distance_a,
