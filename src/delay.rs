@@ -167,6 +167,10 @@ impl Delay {
         self.wet = value;
     }
 
+    pub fn set_chaos(&mut self, index: usize, value: f32) {
+        self.play_heads[index].set_chaos(value);
+    }
+
     pub fn get_draw_data(&mut self, sample: f32) {
         let draw_data = self.draw_data.input_buffer();
 

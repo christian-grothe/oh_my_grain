@@ -119,6 +119,10 @@ fn controlls(cx: &mut Context) {
                 ParamSlider::new(cx, Data::params, |params| &params.playhead_a.gain)
                     .bottom(Pixels(10.0))
                     .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Chaos");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_a.chaos)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
             })
             .height(Auto);
 
@@ -154,6 +158,10 @@ fn controlls(cx: &mut Context) {
                     .set_style(ParamSliderStyle::FromLeft);
                 Label::new(cx, "Gain");
                 ParamSlider::new(cx, Data::params, |params| &params.playhead_b.gain)
+                    .bottom(Pixels(10.0))
+                    .set_style(ParamSliderStyle::FromLeft);
+                Label::new(cx, "Chaos");
+                ParamSlider::new(cx, Data::params, |params| &params.playhead_b.chaos)
                     .bottom(Pixels(10.0))
                     .set_style(ParamSliderStyle::FromLeft);
             })

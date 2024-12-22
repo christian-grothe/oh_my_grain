@@ -27,6 +27,8 @@ struct PlayheadParams {
     pub pitch: IntParam,
     #[id = "gain"]
     pub gain: FloatParam,
+    #[id = "chaos"]
+    pub chaos: FloatParam,
 }
 
 impl PlayheadParams {
@@ -67,6 +69,10 @@ impl PlayheadParams {
             .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
             gain: FloatParam::new("Gain", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit(" %")
+                .with_value_to_string(formatters::v2s_f32_percentage(0)),
+
+            chaos: FloatParam::new("Chaos", 1.0, FloatRange::Linear { min: 0.0, max: 1.0 })
                 .with_unit(" %")
                 .with_value_to_string(formatters::v2s_f32_percentage(0)),
 
@@ -214,6 +220,8 @@ impl Plugin for GranularDelay {
             .set_pitch(0, self.params.playhead_a.pitch.smoothed.next());
         self.delay
             .set_gain(0, self.params.playhead_a.gain.smoothed.next());
+        self.delay
+            .set_chaos(0, self.params.playhead_a.chaos.smoothed.next());
 
         self.delay
             .set_distance(1, self.params.playhead_b.distance.smoothed.next());
@@ -231,6 +239,8 @@ impl Plugin for GranularDelay {
             .set_pitch(1, self.params.playhead_b.pitch.smoothed.next());
         self.delay
             .set_gain(1, self.params.playhead_b.gain.smoothed.next());
+        self.delay
+            .set_chaos(1, self.params.playhead_b.chaos.smoothed.next());
 
         self.delay.set_dry(self.params.dry.smoothed.next());
         self.delay.set_wet(self.params.wet.smoothed.next());

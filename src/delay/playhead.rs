@@ -100,6 +100,10 @@ impl PlayHead {
         data
     }
 
+    pub fn set_chaos(&mut self, chaos: f32) {
+        self.trig.chaos = chaos;
+    }
+
     pub fn update(&mut self) {
         self.set_current_distance();
         if self.trig.update() {
@@ -210,6 +214,8 @@ struct Trig {
     inc: f32,
     phase: f32,
     sample_rate: f32,
+    chaos: f32,
+    rnd: f32,
 }
 
 impl Trig {
@@ -218,6 +224,8 @@ impl Trig {
             inc: 0.0,
             phase: 0.0,
             sample_rate: 0.0,
+            chaos: 1.0,
+            rnd: 1.0,
         }
     }
 
@@ -231,8 +239,9 @@ impl Trig {
 
     fn update(&mut self) -> bool {
         self.phase += self.inc;
-        if self.phase > 1.0 {
-            self.phase -= 1.0;
+        if self.phase > 1.0 + self.rnd {
+            self.rnd = (rand::random::<f32>() - 0.5) * 2.0 * self.chaos;
+            self.phase -= 1.0 + self.rnd;
             return true;
         }
         false
